@@ -41,12 +41,12 @@ Todo va a un solo ESP32 y el ESP32 va a la computadora con un cable USB.
 
 ```
 dedo     -> MAX30102 (pulso y oxígeno) ----+
-axila    -> MAX30205 o DS18B20 ------------+
+axila    -> DS18B20 ----------------------+
 báscula  -> 4 celdas de carga -> HX711 ----+--> ESP32 --USB--> computadora con MediBot
 botones  -> verde / rojo / azul -----------+
 ```
 
-Lista de piezas y precios en [docs/lista_de_materiales.md](docs/lista_de_materiales.md). Cómo armar y calibrar la báscula en [docs/bascula.md](docs/bascula.md). El programa del ESP32 está en `firmware/medibot_esp32/` y el formato de los mensajes en [docs/protocolo_serial.md](docs/protocolo_serial.md).
+Qué cable va a qué pin y cómo cargar el programa en [docs/esp32_conexiones.md](docs/esp32_conexiones.md). Lista de piezas y precios en [docs/lista_de_materiales.md](docs/lista_de_materiales.md). Cómo armar y calibrar la báscula en [docs/bascula.md](docs/bascula.md). El programa del ESP32 está en `firmware/medibot_esp32/` y el formato de los mensajes en [docs/protocolo_serial.md](docs/protocolo_serial.md).
 
 ## Compilar
 

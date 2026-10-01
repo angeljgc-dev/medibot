@@ -12,7 +12,7 @@ Fecha: 2026-09-20. Precios aproximados en MXN, sin validar; verificar antes de c
 |---|---|---|---|---|
 | 1 | ESP32 DevKit **con chip CP2102** | Cerebro; manda todo por USB | 180–250 | No CH340: los controladores recientes de Windows 11 inutilizan los falsificados |
 | 2 | MAX30102 (módulo) | Pulso y oxígeno en el dedo | 80–150 | I2C (SDA 21, SCL 22). Va dentro de la carcasa donde se apoya la mano |
-| 3 | Sensor de temperatura: MAX30205 (recomendado, ±0.1 °C, I2C) o sonda DS18B20 impermeable (±0.5 °C, OneWire) | Temperatura axilar aproximada | 60–250 | Para axila: sonda con cable de 1 m. Se rotula "aproximada" |
+| 3 | Sonda DS18B20 impermeable con cable de 1 m (±0.5 °C) y resistencia de 4.7 kΩ | Temperatura axilar aproximada | 60–120 | Es la que lee el programa actual (GPIO15). Se rotula "aproximada". MAX30205 sería más precisa pero requiere cambiar el programa |
 | 4 | Báscula de baño digital de vidrio, 180 kg, plataforma ≥ 30×30 cm | Peso | 250–400 | Se desecha su tarjeta; se usan su plataforma y sus 4 celdas |
 | 5 | Módulo HX711 (comprar 2, uno de repuesto) | Lee las celdas de la báscula | 60–120 | DOUT 16, SCK 4; puente RATE a VCC |
 | 6 | Cable USB **con datos**, apantallado, 1.5 m (2) | ESP32 ↔ computadora | 120 | Muchos cables baratos son solo de carga |
@@ -25,7 +25,7 @@ Fecha: 2026-09-20. Precios aproximados en MXN, sin validar; verificar antes de c
 Total sin el opcional ni el plan B: **≈ 1,100–1,700 MXN**. Con ambos: ≈ 1,700–2,600.
 
 ## 3. Software del ESP32
-1. Arduino IDE con el paquete ESP32 y las bibliotecas: SparkFun MAX3010x, HX711 (bogde), OneWire + DallasTemperature (o ClosedCube MAX30205), Preferences.
+1. Arduino IDE con el paquete ESP32 y las bibliotecas: SparkFun MAX3010x, HX711 (bogde), OneWire y DallasTemperature. Pasos completos y conexiones en `esp32_conexiones.md`.
 2. Cargar `firmware/medibot_esp32/medibot_esp32.ino` (v0.2). Ajustar pines si cambian.
 3. Al conectar por USB, MediBot lo detecta sola: el pie de página dice "Sensores: ESP32 conectado".
 
