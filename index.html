@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es-MX" data-theme="auto" data-scale="md">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="MediBot: quiosco de orientación en salud y educación nutricional. No diagnostica.">
+  <title>MediBot · Orientación en salud</title>
+  <link rel="stylesheet" href="css/app.css?v=0.3.2">
+  <link rel="stylesheet" href="css/print.css?v=0.3.2" media="print">
+  <link rel="icon" href="assets/icono.svg" type="image/svg+xml">
+</head>
+<body>
+  <a class="salto" href="#app">Ir al contenido</a>
+
+  <!-- Sprite de iconos (sin red) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/></symbol>
+      <symbol id="i-triangle" viewBox="0 0 24 24"><path d="M12 3.5L22 20H2z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M12 9v5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="12" cy="17" r="1.4" fill="currentColor"/></symbol>
+      <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-8-5.2-8-11A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5c0 5.8-8 11-8 11z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M5 12h3l1.5-3 2 6 1.5-4 1 1h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-temp" viewBox="0 0 24 24"><path d="M10 4a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M12 9v6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+      <symbol id="i-scale" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8 8h8M12 12v5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+      <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+      <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 0 0 5 5L16 12l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 8V3h10v5M5 8h14a2 2 0 0 1 2 2v6h-4v4H7v-4H3v-6a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-next" viewBox="0 0 24 24"><path d="M10 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+      <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11m0-6.5a1.5 1.5 0 0 1 3 0V11m0-4a1.5 1.5 0 0 1 3 0v4m0-1.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-5-2.7L4.5 14a1.6 1.6 0 0 1 2.6-1.8L8 13.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19C5 9 11 4 20 4c0 9-5 15-15 15z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M5 19c3-4 6-7 10-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="7.5" r="1.4" fill="currentColor"/></symbol>
+      <symbol id="i-usb" viewBox="0 0 24 24"><path d="M12 2v14m0 0l-4-3m4 3l4-3M8 8V5h8v3M6 18a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h13" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></symbol>
+      <symbol id="i-voz" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="barra" role="banner">
+    <button class="marca" type="button" data-accion="inicio" aria-label="MediBot, volver al inicio">
+      <span class="marca__cruz" aria-hidden="true"></span>
+      <span class="marca__nombre">Medi<b>Bot</b></span>
+    </button>
+    <ol class="pasos" id="pasos" aria-label="Progreso"></ol>
+    <div class="barra__acciones">
+      <button class="btn btn--fantasma btn--escuchar" type="button" data-accion="escuchar" aria-label="Escuchar lo que dice la pantalla">
+        <svg class="ico" aria-hidden="true"><use href="#i-voz"/></svg><span>Escuchar</span>
+      </button>
+      <button class="btn btn--fantasma" type="button" data-accion="letra" aria-pressed="false">
+        <svg class="ico" aria-hidden="true"><use href="#i-text"/></svg><span>Letra grande</span>
+      </button>
+      <button class="btn btn--fantasma" type="button" data-accion="tema" aria-label="Cambiar entre modo claro y oscuro">
+        <svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg>
+      </button>
+      <button class="btn btn--fantasma btn--terminar" type="button" data-accion="terminar" hidden>
+        <svg class="ico" aria-hidden="true"><use href="#i-x"/></svg><span>Terminar</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="app" class="app" tabindex="-1" aria-live="polite" aria-atomic="false"></main>
+
+  <footer class="pie" role="contentinfo">
+    <button class="enlace" type="button" data-accion="acerca">¿Por qué MediBot no diagnostica?</button>
+    <span class="pie__sep" aria-hidden="true">·</span>
+    <button class="enlace enlace--apoyo" type="button" data-accion="apoyo" id="pie-apoyo">¿Te sientes mal por dentro?</button>
+    <span class="pie__sep" aria-hidden="true">·</span>
+    <span class="pie__estado" id="estado-sensores" aria-live="polite">Sensores: sin conectar</span>
+    <span class="pie__sep" aria-hidden="true">·</span>
+    <span>v0.3 · Grupo 301 TSU Automatización</span>
+  </footer>
+
+  <!-- Aviso de inactividad -->
+  <dialog id="dlg-inactivo" class="dialogo" aria-labelledby="dlg-inactivo-t">
+    <h2 id="dlg-inactivo-t">¿Sigues ahí?</h2>
+    <p>Por tu privacidad, la pantalla se borrará en <strong id="cuenta-regresiva">30</strong> segundos.</p>
+    <div class="dialogo__acciones">
+      <button class="btn btn--primario btn--xl" type="button" data-accion="seguir">Sí, sigo aquí</button>
+      <button class="btn btn--secundario" type="button" data-accion="terminar">Borrar y terminar</button>
+    </div>
+  </dialog>
+
+  <!-- Acerca de -->
+  <dialog id="dlg-acerca" class="dialogo dialogo--ancho" aria-labelledby="dlg-acerca-t">
+    <h2 id="dlg-acerca-t">¿Por qué MediBot no diagnostica?</h2>
+    <div id="acerca-cuerpo"></div>
+    <div class="dialogo__acciones">
+      <button class="btn btn--primario" type="button" data-accion="cerrar-acerca">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- Apoyo emocional (siempre disponible, no cambia el resultado) -->
+  <dialog id="dlg-apoyo" class="dialogo" aria-labelledby="dlg-apoyo-t">
+    <h2 id="dlg-apoyo-t">Aquí te escuchan</h2>
+    <div id="apoyo-cuerpo"></div>
+    <div class="dialogo__acciones">
+      <button class="btn btn--primario" type="button" data-accion="cerrar-apoyo">Cerrar</button>
+    </div>
+  </dialog>
+
+  <!-- Datos (editables por el equipo; ver docs/guia_contenido.md) -->
+  <script src="data/textos.js?v=0.3.2"></script>
+  <script src="data/rangos.js?v=0.3.2"></script>
+  <script src="data/alarma.js?v=0.3.2"></script>
+  <script src="data/fichas.js?v=0.3.2"></script>
+  <!-- Código -->
+  <script src="js/util.js?v=0.3.2"></script>
+  <script src="js/reglas.js?v=0.3.2"></script>
+  <script src="js/sensores.js?v=0.3.2"></script>
+  <script src="js/pantallas.js?v=0.3.2"></script>
+  <script src="js/evidencia.js?v=0.3.2"></script>
+  <script src="js/voz.js?v=0.3.2"></script>
+  <script src="js/app.js?v=0.3.2"></script>
+</body>
+</html>

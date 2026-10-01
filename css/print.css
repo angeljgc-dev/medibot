@@ -1,0 +1,21 @@
+/* Hoja de resumen imprimible (carta, 1 página) */
+@page { size: letter; margin: 14mm; }
+html { font-size: 11pt; }
+body { background: #fff !important; color: #000 !important; display: block; }
+body::before { display: none; }
+.barra, .pie, .acciones, .operador, dialog, .pasos, .btn, .no-imprimir { display: none !important; }
+.app { width: 100%; margin: 0; }
+.pantalla, .pantalla > * { animation: none !important; }
+.tarjeta { box-shadow: none; border: 1px solid #999; border-radius: 6px; padding: 8pt 10pt; background: #fff; break-inside: avoid; }
+.nivel-hero { color: #000 !important; background: #fff !important; border: 3px solid #000; box-shadow: none; padding: 10pt; border-radius: 8px; }
+.nivel-hero__forma { background: #eee; }
+.nivel-hero h1 { color: #000; font-size: 20pt; }
+.nivel-hero--rojo { border-color: #b3261e; } .nivel-hero--ambar { border-color: #9a5a0a; } .nivel-hero--verde { border-color: #2e7346; }
+.nivel-tag { border: 1px solid #000; color: #000 !important; background: #fff !important; }
+.tabla th, .tabla td { padding: 3pt 4pt; border-bottom: 1px solid #bbb; }
+.fuente a::after { content: " (" attr(href) ")"; font-size: 8pt; }
+.fuente { font-size: 8pt; }
+.ficha { border: 1px solid #999; break-inside: avoid; }
+.leyenda { border: 1px dashed #666; }
+.solo-imprimir { display: block !important; }
+h1 { font-size: 18pt; } h2 { font-size: 14pt; } h3 { font-size: 12pt; }

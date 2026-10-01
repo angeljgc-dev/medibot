@@ -1,0 +1,53 @@
+{
+  "name": "medibot",
+  "productName": "MediBot",
+  "version": "0.3.0",
+  "description": "MediBot: quiosco de orientación en salud (no diagnostica). Aplicación de escritorio.",
+  "main": "main.js",
+  "author": "Grupo 301 TSU Automatización",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "empaquetar": "electron-builder --win --dir",
+    "portable": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "mx.medirobot.medibot",
+    "productName": "MediBot",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "icono.ico"
+    ],
+    "extraResources": [
+      {
+        "from": "../",
+        "to": "web",
+        "filter": [
+          "index.html",
+          "css/**",
+          "js/**",
+          "data/**",
+          "assets/**"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "icono.ico",
+      "artifactName": "MediBot-${version}.${ext}"
+    },
+    "asar": true
+  },
+  "devDependencies": {
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3"
+  }
+}
