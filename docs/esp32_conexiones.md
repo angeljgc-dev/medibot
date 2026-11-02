@@ -134,7 +134,7 @@ Si un sensor no aparece, revisa sus cables. El programa sigue funcionando con lo
 
 En unos segundos el pie de la pantalla dice **"Sensores: ESP32 conectado"**. MediBot prueba los puertos USB y se queda con el que manda líneas de MediBot; no hay que elegir nada.
 
-Luego, en la pantalla de inicio, entra a **Verificación de sensores**. Ahí ves las lecturas en vivo de los tres sensores y haces la tara y calibración de la báscula (ver [bascula.md](bascula.md)). La calibración se guarda en el ESP32, así que se hace una vez.
+Luego abre el panel del operador (mantén apretado el logo de MediBot 5 segundos, o **Ctrl+Alt+Shift+O**) y entra a **Verificación de sensores**. Ahí ves las lecturas en vivo de los tres sensores y haces la tara y calibración de la báscula (ver [bascula.md](bascula.md)). La calibración se guarda en el ESP32, así que se hace una vez.
 
 ## Si algo falla
 

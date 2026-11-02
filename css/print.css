@@ -1,21 +1,87 @@
-/* Hoja de resumen imprimible (carta, 1 página) */
-@page { size: letter; margin: 14mm; }
+/* Hoja de resumen imprimible (carta, 1 página). Colores: tokens de impresión de css/tokens.css (@media print), que ganan
+   aunque el quiosco esté en oscuro o con «Letra grande»: tinta negra sobre blanco. Aquí no hay colores sueltos.
+   Criterios 38 y 65: la letra base es 11 pt (encabezados más grandes). Si no cabe en una carta, js/pantallas.js
+   (ajustarHoja) primero quita cosas, en orden (clases .hoja--sin-* y .hoja--compacta, y las ideas de más una por una con
+   [data-fuera]); solo si aun así no cabe, como último recurso, achica la hoja hasta 91 % (11 pt × 0.91 = 10 pt). Piso
+   real: ninguna letra impresa baja de 10 pt.
+   Que cabe en una carta lo comprueban tools/e2e_pantallas.py (E3b, E10, E10c) y tools/e2e_ronda2.py imprimiendo a PDF. */
+@page { size: letter; margin: 7mm; }
 html { font-size: 11pt; }
-body { background: #fff !important; color: #000 !important; display: block; }
-body::before { display: none; }
-.barra, .pie, .acciones, .operador, dialog, .pasos, .btn, .no-imprimir { display: none !important; }
-.app { width: 100%; margin: 0; }
-.pantalla, .pantalla > * { animation: none !important; }
-.tarjeta { box-shadow: none; border: 1px solid #999; border-radius: 6px; padding: 8pt 10pt; background: #fff; break-inside: avoid; }
-.nivel-hero { color: #000 !important; background: #fff !important; border: 3px solid #000; box-shadow: none; padding: 10pt; border-radius: 8px; }
-.nivel-hero__forma { background: #eee; }
-.nivel-hero h1 { color: #000; font-size: 20pt; }
-.nivel-hero--rojo { border-color: #b3261e; } .nivel-hero--ambar { border-color: #9a5a0a; } .nivel-hero--verde { border-color: #2e7346; }
-.nivel-tag { border: 1px solid #000; color: #000 !important; background: #fff !important; }
-.tabla th, .tabla td { padding: 3pt 4pt; border-bottom: 1px solid #bbb; }
-.fuente a::after { content: " (" attr(href) ")"; font-size: 8pt; }
-.fuente { font-size: 8pt; }
-.ficha { border: 1px solid #999; break-inside: avoid; }
-.leyenda { border: 1px dashed #666; }
-.solo-imprimir { display: block !important; }
-h1 { font-size: 18pt; } h2 { font-size: 14pt; } h3 { font-size: 12pt; }
+body { background: var(--fondo) !important; color: var(--texto) !important; overflow: visible; }
+.pantalla { height: auto; display: block; }
+.contenido { overflow: visible; padding: 0; display: block; }
+.app { display: block; max-width: none; }
+.cabecera, .botonera, .pie, .salto, dialog, .acciones, .btn, .fisico, .fantasma, .no-imprimir, .operador, .resumen > .titulo-pantalla { display: none !important; }
+.vista, .resumen { display: block; }
+.demo { display: block; border: 1px solid var(--borde-fuerte); background: var(--fondo) !important; color: var(--texto) !important; padding: 2pt 6pt; font-size: 11pt; margin-bottom: 3pt; }
+.demo[hidden] { display: none !important; }
+.fuente a::after { content: none; }
+.fuente, .hoja small { font-size: 11pt; }
+
+.hoja { display: block; border: 0; padding: 0; background: var(--fondo); line-height: 1.15; font-size: 11pt; }
+.hoja > * + * { margin-top: 3pt; }
+.hoja p, .hoja li, .hoja .leyenda p { max-width: none; }
+.hoja h2 { font-size: 13pt; margin-bottom: 1pt; }
+.hoja h3 { font-size: 12pt; margin: 2pt 0 1pt; }
+.hoja__titulo { font-size: 12pt; font-weight: 700; }
+.hoja__meta { font-size: 11pt; color: var(--texto); }
+.hoja__nota { display: none; }
+.hoja__nivel { display: flex; gap: 6pt; align-items: center; padding: 2pt 6pt; border-width: 1.5pt; border-left-width: 4pt; font-size: 12pt; }
+.hoja__nivel .pic { width: 12mm; height: 12mm; }
+.hoja__nivel b { font-size: 16pt; }
+.hoja__dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8pt; font-size: 11pt; }
+.hoja__dos > * { display: block; }
+.hoja ol, .hoja ul { padding-left: 13pt; margin: 0; }
+.tabla { width: 100%; border-collapse: collapse; }
+/* La hoja se mide (ajustarHoja) con estas reglas puestas un instante sobre la pantalla: la tabla vuelve a ser tabla aunque
+   la pantalla sea angosta (app.css la apila debajo de 640 px) y sin los anchos fijos de la vista previa, como en el papel */
+.tabla--hoja { display: table; table-layout: auto; } .tabla--hoja tbody { display: table-row-group; }
+.tabla--hoja tr { display: table-row; padding: 0; border: 0; } .tabla--hoja td { display: table-cell; }
+.tabla--hoja td:first-child, .tabla--hoja td.valor, .tabla--hoja td:last-child { width: auto; }
+.tabla--hoja td { padding: 0 3pt; border-bottom: 0.5pt solid var(--borde-suave); font-size: 11pt; }
+.tabla--hoja .valor { font-size: 11pt; }
+.nivel { color: var(--texto) !important; background: var(--fondo) !important; border: 0.75pt solid var(--borde-fuerte); box-shadow: none !important; font-size: 11pt; padding: 0 3pt; gap: 2pt; white-space: normal; }
+.nivel .pic { width: 10pt; height: 10pt; }
+.hoja__lugares { font-size: 11pt; line-height: 1.15; }
+.hoja__ideas { margin-top: 3pt; }
+.ideas-hoja { display: grid; gap: 1pt; }
+.ideas-hoja li { display: grid; grid-template-columns: 8mm minmax(0, 1fr); gap: 0 4pt; font-size: 11pt; line-height: 1.15; break-inside: avoid; }
+.ideas-hoja li > .pic { width: 8mm; height: 8mm; grid-row: span 2; }
+.ideas-hoja__alt { font-size: 11pt; line-height: 1.15; color: var(--texto); }
+.hoja__cuidado { font-size: 11pt; line-height: 1.15; }
+.hoja__cuando-ir li { font-size: 11pt; line-height: 1.15; }
+.leyenda { border: 0.75pt dashed var(--borde-fuerte); font-size: 11pt; padding: 2pt 6pt; color: var(--texto); display: block; }
+.leyenda p { margin-bottom: 0; }
+.hoja__fuentes { font-size: 11pt; }
+.hoja__no-dejes { font-size: 12pt; }
+.linea-firma { display: none; }
+/* «si cabe» (js/pantallas.js, ajustarHoja): lo que se quita, en orden, antes de achicar */
+.hoja--sin-cuidado .hoja__cuidado, .hoja--sin-alternativas .ideas-hoja__alt, .ideas-hoja li[data-fuera],
+.hoja--sin-fuentes .hoja__fuentes, .hoja--sin-vuelve .hoja__vuelve { display: none; }
+/* El rojo no lleva ideas: aprovecha la página con letra más grande y el 911 al frente */
+.hoja--rojo { font-size: 14pt; line-height: 1.25; }
+.hoja--rojo .hoja__dos, .hoja--rojo .tabla--hoja td, .hoja--rojo .tabla--hoja .valor, .hoja--rojo .hoja__lugares, .hoja--rojo .hoja__meta, .hoja--rojo .hoja__fuentes, .hoja--rojo .nivel { font-size: 14pt; }
+.hoja--rojo h2 { font-size: 16pt; }
+.hoja--rojo .hoja__nivel b { font-size: 22pt; }
+/* Para que quepa con letra de 11 pt: las ideas y «Cuándo ir» en dos columnas */
+.ideas-hoja { grid-template-columns: 1fr 1fr; column-gap: 10pt; }
+.hoja__cuando-ir ul { columns: 2; column-gap: 12pt; }
+.hoja__cuando-ir li { break-inside: avoid; }
+.hoja--sin-dibujos .ideas-hoja li > .pic { display: none; }
+.hoja--sin-dibujos .ideas-hoja li { grid-template-columns: minmax(0, 1fr); }
+.hoja--compacta, .hoja--compacta li, .hoja--compacta p { line-height: 1.05; }
+.hoja--compacta > * + * { margin-top: 1pt; }
+.hoja--compacta .hoja__nivel .pic { width: 9mm; height: 9mm; }
+.hoja__avisos-comunes { font-size: 11pt; }
+.hoja--compacta .hoja__titulo, .hoja--compacta .hoja__meta { display: inline; margin: 0; }
+.hoja--compacta .hoja__titulo::after { content: " "; }
+.hoja--compacta .hoja__nivel { padding: 0 6pt; }
+.hoja--compacta .hoja__nivel b { font-size: 14pt; }
+.hoja--compacta h2 { margin: 0; }
+.hoja--compacta .ideas-hoja { gap: 0 10pt; }
+.hoja--compacta .hoja__dos { gap: 6pt; }
+.hoja--compacta .hoja__cuando-ir li, .hoja--compacta .hoja ol li { margin: 0; }
+.hoja--compacta .tabla--hoja td { padding: 0 2pt; }
+.hoja .nivel { white-space: nowrap; align-items: center; } .hoja .nivel .pic { flex: none; } /* criterio 63 */
+.hoja__notas-med { font-size: 11pt; }
+.app .hoja small, .app .hoja .tabla small { font-size: 11pt; } /* la unidad («latidos por minuto») tampoco baja de 11 pt */

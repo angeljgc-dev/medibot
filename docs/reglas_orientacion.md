@@ -79,3 +79,20 @@ Apoyo (no cambia el semáforo): ofrecimiento respetuoso de la [Línea de la Vida
 - Las páginas de NIH ODS y PubMed responden 403 a robots; las URL existen y deben abrirse a mano para copiar cifras.
 - Contenido nutricional de alimentos oaxaqueños: sin cifras hasta tener tabla de composición (INSP / USDA FoodData Central). Por eso las fichas dicen "tiene" y no "aporta X mg".
 - Encuadre de software no regulado como dispositivo médico: inferencia razonable a partir de la Ley General de Salud (no hay exclusión expresa).
+
+## Peso de la báscula: validación de entrada (v0.5)
+
+No es una regla del semáforo: solo decide si una lectura de la báscula se guarda. Si el peso queda fuera del rango creíble
+para la edad, no se guarda y la voz dice «¿Se subió alguien más? Deja solo a la persona en la báscula». El peso escrito a
+mano nunca lo pisa la báscula, y con un niño o niña la báscula no pesa sola (`js/pantallas.js`, `RANGO_PESO`).
+
+| Edad | Rango que se acepta (kg) |
+|---|---|
+| Menos de 3 meses | 1 a 10 |
+| Menos de 2 años | 2 a 20 |
+| 2 a 5 años | 8 a 30 |
+| 6 a 11 años | 14 a 80 |
+| 12 a 17 años | 25 a 150 |
+| 18 años o más | 30 a 250 |
+
+Los rangos son amplios a propósito (criterio de MediBot, sin fuente clínica): solo atrapan a otra persona sobre la báscula.

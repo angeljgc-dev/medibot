@@ -8,7 +8,23 @@ MediBot es una aplicación de escritorio para Windows 10 u 11. No necesita inter
 2. Doble clic en `Instalar autoinicio.cmd`. Crea el icono **MediBot** en el Escritorio y lo pone en la carpeta de Inicio para que arranque solo al encender.
 3. Abre MediBot. Se abre en pantalla completa.
 
-Para cerrarla: Ctrl+Alt+Shift+Q, o el botón "Salir de la aplicación" en la pantalla de inicio. Para quitar el arranque automático, borra `MediBot.lnk` de la carpeta que abre `shell:startup`.
+Para cerrarla:
+
+- Con teclado: **Ctrl+Alt+Shift+Q**.
+- Sin teclado: en la pantalla de inicio, mantén apretado **"Cerrar MediBot"** (abajo a la derecha; en pantallas chicas está al final del inicio, desliza hacia arriba) 3 segundos y toca **"Sí, cerrar"**. El botón verde y Enter nunca la cierran, y si nadie contesta en 15 segundos la pregunta se quita sola.
+- Desde el panel del operador: **"Salir de la aplicación"**.
+
+Para quitar el arranque automático, borra `MediBot.lnk` de la carpeta que abre `shell:startup`.
+
+## Panel del operador
+
+No se ve en la pantalla de inicio para que el público no lo abra por accidente. Se abre manteniendo apretado el logo de MediBot (arriba a la izquierda) 5 segundos, o con **Ctrl+Alt+Shift+O**. Ahí se configura:
+
+1. **Lugar**: municipio y centro de salud de la comunidad, desde el catálogo de unidades públicas de Oaxaca o a mano. Se puede exportar e importar para pasarlo a otra computadora. Ver [guia_lugares.md](guia_lugares.md).
+2. **Altitud** del sitio en metros.
+3. **Verificación de sensores**: tara y calibración de la báscula con una pesa conocida, prueba del termómetro y bitácora. Ver [bascula.md](bascula.md).
+4. **Simulación** para demostrar sin sensores. Pinta "DEMOSTRACIÓN" en todas las pantallas y en la hoja, y se apaga sola al terminar cada consulta.
+5. **Claro u oscuro**. De fábrica MediBot sale en claro aunque Windows esté en modo oscuro; si lo cambias aquí, se respeta tu elección.
 
 ## Conectar el ESP32
 
@@ -18,7 +34,11 @@ Si Windows no reconoce el ESP32, falta el controlador del chip USB (CP210x de Si
 
 ## Editar el contenido sin compilar
 
-Los textos, rangos, preguntas y fichas están en `C:\MediBot\resources\web\data\`. Se pueden editar con el Bloc de notas siguiendo [guia_contenido.md](guia_contenido.md). Luego se cierra y se vuelve a abrir la app.
+Los textos, preguntas, ideas y tarjetas están en `C:\MediBot\resources\web\data\`. Se pueden editar con el Bloc de notas siguiendo [guia_contenido.md](guia_contenido.md) y [corpus_esquema.md](corpus_esquema.md). Luego se cierra y se vuelve a abrir la app. Antes de llevar los cambios a una comunidad, corre `python tools/lint_contenido.py` en la carpeta del código. Los rangos y las preguntas de alarma (`rangos.js`, `alarma.js`) no se cambian sin revisión clínica.
+
+## Actualizar a una versión nueva
+
+Reemplaza la carpeta por la nueva. Las preferencias del equipo (lugar, altitud, tema, tamaño de letra, bitácora de calibración) se guardan en el perfil de la aplicación de esa computadora, no en la carpeta, así que se conservan.
 
 ## Compilar desde el código
 
@@ -54,4 +74,4 @@ Opciones para probar:
 
 ## Seguridad y privacidad
 
-La ventana corre aislada (sin acceso a Node desde la página) y no navega a ningún sitio externo. No guarda datos personales: todo se borra al terminar. Lo único que se guarda en la computadora son preferencias de pantalla, la altitud del lugar y la bitácora de calibración.
+La ventana corre aislada (sin acceso a Node desde la página) y no navega a ningún sitio externo. No guarda datos personales: todo se borra al terminar. Lo único que se guarda en la computadora son preferencias de pantalla, el lugar y su centro de salud, la altitud y la bitácora de calibración.

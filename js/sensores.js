@@ -15,6 +15,12 @@
   const VENDEDORES = [0x303a, 0x10c4, 0x1a86, 0x0403, 0x2341]; // Espressif, CP210x, CH340, FTDI, Arduino
   const RANGOS = { pulso: [30, 220], spo2: [70, 100], temp: [34, 41.5], peso: [5, 300], talla: [40, 250] };
   const mediana = (arr) => { const s = [...arr].sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  // Temperatura: se mide hasta que se estabiliza. Ventana de 30 s, cambio ≤ 0.1 °C, tope de 180 s,
+  // mediana de las últimas 10 muestras buenas. La ventana debe ser continua: un hueco de más de 10 s entre muestras o
+  // una lectura fuera de rango la reinicia. 10 s cubre la cadencia del firmware (~4–5 s: el loop lee 4 s de oxímetro
+  // antes de la temperatura, más 1 s de BLE si está activo); el protocolo dice ~1 Hz, por eso no se fija un mínimo de 10.
+  const TEMP = { ventanaMs: 30_000, cambioMax: 0.1, topeMs: 180_000, ultimas: 10, huecoMaxMs: 10_000, minVentana: 3 };
+  const EPS = 1e-6; // 36.6 − 36.5 = 0.10000000000000142 en coma flotante: sin esto, 0.1 °C justo no contaría como estable
 
   class Sensores extends EventTarget {
     constructor() {
@@ -22,13 +28,16 @@
       this.modo = "desconectado"; // desconectado | serial | sim
       this.port = null; this.reader = null; this.writer = null; this._leyendo = false; this._simTimer = null;
       this._oyentes = new Set(); this._probando = false; this._vigilando = false; this._rondasFallidas = 0;
-      this._reintento = null; this._lecturaTerminada = null;
+      this._reintento = null; this._lecturaTerminada = null; this._simColocarTermometro = null;
+      /** Reloj en ms que fecha las muestras (_emitir), mide la temperatura y mueve la curva del simulador.
+          Punto de inyección para pruebas (tests/temperatura.test.mjs lo sustituye junto con mock.timers); en el quiosco es Date.now. */
+      this.reloj = () => Date.now();
     }
 
     get disponibleSerial() { return "serial" in navigator && window.isSecureContext; }
 
     _emitir(muestra) {
-      muestra.ts = Date.now();
+      muestra.ts = this.reloj();
       for (const fn of this._oyentes) { try { fn(muestra); } catch (e) { console.error(e); } }
       this.dispatchEvent(new CustomEvent("muestra", { detail: muestra }));
     }
@@ -152,18 +161,30 @@
       this.escenario = escenario;
       this._estado("sim", "simulación: " + escenario);
       const E = {
-        normal:       { bpm: 68 + Math.random() * 14, spo2: 96 + Math.random() * 3, temp: 36.3 + Math.random() * .6 },
+        normal:       { bpm: 70 + Math.random() * 10, spo2: 97 + Math.random() * 1.5, temp: 36.4 + Math.random() * .4 },
         oxigeno_bajo: { bpm: 92, spo2: 91.5, temp: 36.8 },
         fiebre:       { bpm: 98, spo2: 96, temp: 38.7 },
         pulso_alto:   { bpm: 126, spo2: 97, temp: 36.9 },
         inestable:    { bpm: 75, spo2: 96, temp: 36.6 }
       }[escenario] || {};
-      let bpm = E.bpm, spo2 = E.spo2, temp = E.temp, kg = 58 + Math.random() * 30;
+      let bpm = E.bpm, spo2 = E.spo2, kg = 58 + Math.random() * 30;
+      this.pesoSimulado = (x) => { kg = x; }; // criterio 71: la pantalla de peso le dice cuánto pesa la persona elegida
       const salto = escenario === "inestable" ? 1 : 0;
       let n = 0;
+      // Termómetro simulado: sube en exponencial desde la piel (32 °C) hacia el valor del escenario, τ = 6 s, ruido ±0.02 °C
+      // y un decimal como el firmware; se estabiliza (regla de estabilidad) en ~1 min. La subida arranca al colocarlo, es decir, cuando
+      // empieza medir("temp"). Antes era una caminata aleatoria ya en el valor final, que podía no estabilizarse nunca.
+      const T_PIEL = 32, TAU_MS = 6000;
+      let tempDesde = this.reloj();
+      this._simColocarTermometro = () => { tempDesde = this.reloj(); };
       this._simTimer = setInterval(() => {
         n++;
-        bpm += (Math.random() - .5) * 2; spo2 += (Math.random() - .5) * .6; temp += (Math.random() - .5) * .05;
+        // Criterio 34: cada valor regresa al del escenario (ruido acotado, sin deriva); el oxígeno nunca pasa de 100
+        bpm += (E.bpm - bpm) * 0.3 + (Math.random() - .5) * 2;
+        bpm = Math.min(E.bpm + 4, Math.max(E.bpm - 4, bpm));
+        spo2 += (E.spo2 - spo2) * 0.3 + (Math.random() - .5) * .6;
+        spo2 = Math.min(100, E.spo2 + 1, Math.max(E.spo2 - 1, spo2));
+        const temp = E.temp - (E.temp - T_PIEL) * Math.exp(-(this.reloj() - tempDesde) / TAU_MS) + (Math.random() - .5) * .04;
         const q = n < 4 ? .3 + n * .15 : Math.min(1, .75 + Math.random() * .25);
         const desvio = salto ? (Math.floor(n / 30) % 2 ? 18 : 0) : 0;
         this._emitir({ t: "pulso", bpm: Math.round(bpm + desvio), spo2: Math.round(spo2 * 10) / 10, q });
@@ -175,6 +196,7 @@
 
     async desconectar() {
       if (this._simTimer) { clearInterval(this._simTimer); this._simTimer = null; }
+      this._simColocarTermometro = null;
       const p = this.port; this.port = null;
       if (p) await this._cerrarPuerto(p); else this._leyendo = false;
       this._estado("desconectado", "");
@@ -184,8 +206,10 @@
      * Mide durante hasta `segundos`; llama onMuestra({valor, valor2, calidad, progreso, n}) cada muestra.
      * tipo: "pulso" (bpm + spo2), "temp", "peso", "talla". Para "peso" termina antes con 3 muestras estables seguidas.
      * Resuelve con la mediana de las muestras buenas (pulso: últimas 10).
+     * "temp" NO sigue esta regla: va a _medirTemp (hasta estabilizarse; ver ahí la forma del resultado y del callback).
      */
     medir(tipo, segundos, onMuestra) {
+      if (tipo === "temp") return this._medirTemp(onMuestra);
       return new Promise((resolve, reject) => {
         if (this.modo === "desconectado") return reject(new Error("Sin sensor conectado"));
         const buenas = []; const inicio = Date.now(); let establesSeguidas = 0;
@@ -218,6 +242,87 @@
         };
         this._oyentes.add(oyente);
         const timer = setTimeout(() => terminar(), segundos * 1000);
+      });
+    }
+
+    /**
+     * Temperatura: mide hasta que el cambio es ≤ 0.1 °C en los últimos 30 s, con tope de 180 s.
+     * El parámetro `segundos` de medir() se ignora para "temp": el tope es siempre 180 s (fijo por diseño; un tope menor
+     * volvería a cortar la subida del sensor, que es el error que se corrige, y uno mayor requiere una decisión de diseño aparte).
+     *
+     * Estabilidad, evaluada en cada muestra buena (34–41.5 °C): se guarda el tramo continuo de muestras buenas (se
+     * reinicia con una lectura fuera de rango o con un hueco de más de 10 s). La ventana va desde la última muestra del
+     * tramo con ts ≤ ahora − 30 s hasta la actual; es estable si existe esa muestra (30 s de datos continuos), la ventana
+     * tiene ≥ 3 muestras y max − min ≤ 0.1 °C. No depende de la cadencia (1 Hz del protocolo o ~4–5 s del firmware).
+     *
+     * onMuestra(m), una vez por cada {"t":"temp"} recibido (los campos de antes, más faltan y estable con otro sentido):
+     *   { valor: °C leídos, valor2: undefined, calidad: 1 (en rango) | 0 (fuera de rango), progreso: 0..1 (tiempo / 180 s),
+     *     n: muestras buenas hasta ahora, estable: boolean (esta muestra ya cumple la regla; si es true, la medición termina),
+     *     faltan: entero ≥ 0, segundos que faltan como máximo para el tope de 180 s }
+     *
+     * Resuelve (nunca rechaza por no estabilizarse) con uno de estos dos objetos:
+     *   { estado: "valida",   valor: number (mediana de las últimas 10 buenas, 1 decimal), calidad: 0..1, duracion: s }
+     *   { estado: "invalida", valor: null, calidad: 0, motivo: "no_estable", duracion: s (≈ 180) }
+     * Rechaza, igual que antes, con Error("Sin sensor conectado") o Error("Señal insuficiente") si al tope hubo < 3
+     * muestras buenas (sensor mal puesto: la pantalla ofrece repetir o escribir el valor), y con
+     * Error("Sensor desconectado") en cuanto el sensor se desconecta a media medición (no espera al tope).
+     */
+    _medirTemp(onMuestra) {
+      return new Promise((resolve, reject) => {
+        if (this.modo === "desconectado") return reject(new Error("Sin sensor conectado"));
+        if (this._simColocarTermometro) this._simColocarTermometro(); // simulador: la subida empieza al colocarlo
+        const [min, max] = RANGOS.temp;
+        const inicio = this.reloj();
+        // tramo: muestras buenas continuas {ts, valor}, recortadas al ancla de la ventana; nBuenas: total, para la calidad
+        let tramo = []; let nBuenas = 0;
+        const ventana = (ahora) => {
+          let i = -1;
+          for (let k = tramo.length - 1; k >= 0; k--) if (tramo[k].ts <= ahora - TEMP.ventanaMs) { i = k; break; }
+          if (i < 0) return null; // aún no hay 30 s de datos continuos
+          if (i > 0) tramo = tramo.slice(i); // lo anterior al ancla ya no se usa
+          return tramo;
+        };
+        const estableEn = (ahora) => {
+          const v = ventana(ahora);
+          if (!v || v.length < TEMP.minVentana) return false;
+          const xs = v.map(b => b.valor);
+          return Math.max(...xs) - Math.min(...xs) <= TEMP.cambioMax + EPS;
+        };
+        const alEstado = (e) => { if (e.detail && e.detail.modo === "desconectado") terminar(false, this.reloj(), new Error("Sensor desconectado")); };
+        const terminar = (estable, ahora, error) => {
+          this._oyentes.delete(oyente); clearTimeout(timer); this.removeEventListener("estado", alEstado);
+          if (error) return reject(error);
+          const duracion = Math.round((ahora - inicio) / 1000);
+          if (!estable) {
+            if (nBuenas < 3) return reject(new Error("Señal insuficiente"));
+            return resolve({ estado: "invalida", valor: null, calidad: 0, motivo: "no_estable", duracion });
+          }
+          const ult = tramo.slice(-TEMP.ultimas).map(b => b.valor); // últimas 10 buenas (a ~4–5 s: las de la ventana)
+          resolve({ estado: "valida", valor: Math.round(mediana(ult) * 10) / 10, calidad: Math.min(1, nBuenas / Math.max(3, duracion * .8)), duracion });
+        };
+        const oyente = (m) => {
+          if (m.t !== "temp") return;
+          const valor = m.c;
+          if (typeof valor !== "number" || Number.isNaN(valor)) return;
+          const ahora = typeof m.ts === "number" ? m.ts : this.reloj();
+          const calidad = valor >= min && valor <= max ? 1 : 0;
+          if (!calidad) tramo = []; // lectura fuera de rango (sensor movido o aún frío): se reinicia la ventana
+          else {
+            if (tramo.length && ahora - tramo[tramo.length - 1].ts > TEMP.huecoMaxMs) tramo = []; // hueco: también
+            tramo.push({ ts: ahora, valor }); nBuenas++;
+          }
+          const estable = calidad === 1 && estableEn(ahora);
+          const transcurrido = ahora - inicio;
+          const faltan = Math.max(0, Math.ceil((TEMP.topeMs - transcurrido) / 1000));
+          if (onMuestra) onMuestra({ valor, valor2: undefined, calidad, progreso: Math.min(1, transcurrido / TEMP.topeMs), n: nBuenas, estable, faltan });
+          if (estable) terminar(true, ahora);
+          else if (transcurrido >= TEMP.topeMs) terminar(false, ahora);
+        };
+        this._oyentes.add(oyente);
+        this.addEventListener("estado", alEstado);
+        // Respaldo si las muestras dejan de llegar (2 s de margen para que la muestra del segundo 180 se juzgue primero).
+        // Sin muestras nuevas no se juzga estabilidad: inválida.
+        const timer = setTimeout(() => terminar(false, this.reloj()), TEMP.topeMs + 2000);
       });
     }
   }

@@ -33,7 +33,9 @@
           "css/**",
           "js/**",
           "data/**",
-          "assets/**"
+          "assets/**",
+          "docs/**",
+          "README.md"
         ]
       }
     ],

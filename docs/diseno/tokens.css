@@ -1,0 +1,175 @@
+/* MediBot · tokens del sistema de diseño v1.0 (2026-11-02). Especificación: docs/diseno/sistema.md
+   Solo variables. Se importa ANTES de css/app.css:  <link rel="stylesheet" href="docs/diseno/tokens.css">
+   (o se copia este archivo a css/tokens.css cuando se aplique el rediseño).
+   Reglas de color que no se negocian:
+   - verde, ámbar y rojo: SOLO semáforo y Sí/No. El verde también es «sigue», como el botón físico verde.
+   - añil: SOLO Escuchar/Repetir (botón físico azul) y el foco.
+   - barro: SOLO identidad (logo y faja). Nunca en controles ni en texto de lectura.
+   Los componentes usan los tokens de función (--fondo, --texto, --sigue, --sem-ambar...), no los de paleta. */
+
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("../../assets/fonts/AtkinsonHyperlegible-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible"; src: url("../../assets/fonts/AtkinsonHyperlegible-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+/* Si este archivo se mueve a css/, cambiar las dos rutas a "../assets/fonts/...". */
+
+:root {
+  /* ---------- Paleta (claro) ---------- */
+  --papel: #F6EFE3;        /* fondo de la app */
+  --papel-2: #EEE3D0;      /* barras, paneles, tarjetas */
+  --papel-3: #E3D3B9;      /* opción elegida, fila al pasar */
+  --hoja: #FFFCF6;         /* superficie que se «lee»: tarjeta de idea, caja del 911 */
+  --linea: #D8C8B2;        /* separador que no se toca (no cuenta como borde de control) */
+  --linea-control: #85725F;/* borde de lo que se toca: 3:1 o más sobre papel y papel-2 */
+  --tinta-2: #5C4A3F;      /* texto secundario: 7:1 o más sobre papel */
+  --tinta: #2A1C15;        /* texto */
+  --picto-contorno: #2B1D16; /* contorno de los pictogramas «A · Bordado» (criterio 77); en oscuro, crema */
+
+  --verde: #2E7346;  --verde-osc: #1F5532;  --verde-suave: #DFF0E3;
+  --ambar: #9A5A0A;  --ambar-osc: #6E3F05;  --ambar-suave: #FBEBD0;
+  --rojo: #B3261E;   --rojo-osc: #8A1C16;   --rojo-suave: #F9DCD9;
+  --anil: #2B4C8C;   --anil-osc: #1D3566;   --anil-suave: #DCE4F2;
+  --barro: #B5471F;  --barro-osc: #8E3616;
+
+  /* ---------- Función ---------- */
+  --fondo: var(--papel);
+  --fondo-panel: var(--papel-2);
+  --fondo-elegido: var(--papel-3);
+  --fondo-lectura: var(--hoja);
+  --fondo-preguntando: var(--anil-suave); /* la opción de la que habla la voz */
+  --texto: var(--tinta);
+  --texto-2: var(--tinta-2);
+  --borde-suave: var(--linea);
+  --borde-control: var(--linea-control);
+  --borde-fuerte: var(--tinta);
+
+  /* Botón verde (sigue / sí / acción principal). Uno por pantalla. */
+  --sigue: var(--verde);          --sigue-texto: #FFFFFF;   --sigue-canto: var(--verde-osc);  --sigue-borde: var(--verde);
+  /* Botón rojo (no / anterior / borrar): contorno rojo, texto en tinta. */
+  --no-borde: var(--rojo);        --no-icono: var(--rojo);  --no-texto: var(--tinta);
+  /* Botón azul (escuchar / repetir). */
+  --oir: var(--anil);             --oir-texto: #FFFFFF;     --oir-canto: var(--anil-osc);     --oir-borde: var(--anil);
+
+  /* Semáforo: sólido (fondo de la etiqueta y del héroe), fondo suave, borde/icono sobre papel y texto sobre el suave. */
+  --sem-verde: var(--verde);  --sem-verde-fondo: var(--verde-suave);  --sem-verde-borde: var(--verde);  --sem-verde-texto: var(--verde-osc);
+  --sem-ambar: var(--ambar);  --sem-ambar-fondo: var(--ambar-suave);  --sem-ambar-borde: var(--ambar);  --sem-ambar-texto: var(--ambar-osc);
+  --sem-rojo: var(--rojo);    --sem-rojo-fondo: var(--rojo-suave);    --sem-rojo-borde: var(--rojo);    --sem-rojo-texto: var(--rojo-osc);
+  --sem-nd: #5C4A3F;          /* «sin color» (niño sin clasificar, omitida): fijo en los dos temas, blanco encima 8.4:1 */
+  --sobre-solido: #FFFFFF;    /* texto e icono sobre cualquier sólido de semáforo, añil o verde */
+
+  --urgente-borde: var(--rojo);
+  --identidad: var(--barro);  --identidad-texto: #FFFFFF;
+
+  --foco: var(--anil-osc);    /* contorno de foco y de «la opción de la que habla la voz» */
+  --foco-sobre-color: #FFFFFF;/* foco dentro de una caja de color (franja roja, héroe) */
+
+  /* ---------- Tipografía ---------- */
+  --f-texto: "Atkinson Hyperlegible", "Segoe UI", "Verdana", sans-serif;
+  --f-titulo: "Bahnschrift", "Atkinson Hyperlegible", "Segoe UI", sans-serif;   /* Bahnschrift viene con Windows 10 1709+ */
+  --f-numero: "Bahnschrift", "Atkinson Hyperlegible", "Segoe UI", sans-serif;   /* con font-variant-numeric: tabular-nums */
+
+  --base: 20px;               /* tamaño de 1rem. «Letra grande» lo sube a 28px. Es la única perilla. */
+  --t-min: 0.95rem;           /* 19 px: piso para todo texto que lee la persona */
+  --t-cuerpo: 1rem;           /* 20 px */
+  --t-destacado: 1.2rem;      /* 24 px: etiqueta de opción, «para qué» de la idea */
+  --t-titulo-3: 1.45rem;      /* 29 px: título de tarjeta, pregunta corta */
+  --t-titulo-2: 1.9rem;       /* 38 px: pregunta de la pantalla */
+  --t-titulo-1: clamp(1.9rem, 6vw, 2.6rem);    /* 52 px: nombre de la idea */
+  --t-heroe: clamp(2.1rem, 7.5vw, 3.2rem);     /* 64 px: «Amarillo: ve al centro de salud» */
+  --t-911: clamp(3rem, 15vw, 4.2rem);          /* 84 px: el número 911 */
+  --t-vivo: clamp(3rem, 14vw, 4.8rem);         /* 96 px: número de la medición en vivo */
+  --t-operador: 0.8rem;       /* 16 px: SOLO panel del operador */
+
+  --lh-texto: 1.45;
+  --lh-titulo: 1.1;
+  --medida: 36em;             /* largo máximo de una línea de lectura */
+  --peso-normal: 400;
+  --peso-fuerte: 700;
+
+  /* ---------- Espaciado (escala de 4; en rem para que crezca con «Letra grande») ---------- */
+  --e-1: 0.25rem;  --e-2: 0.5rem;  --e-3: 0.75rem;  --e-4: 1rem;
+  --e-5: 1.5rem;   --e-6: 2rem;    --e-7: 3rem;     --e-8: 4rem;
+  --margen-lateral: clamp(16px, 3vw, 2.5rem);     /* 16 px a 375, ~38 px a 1280 */
+  --ancho-max: 1500px;
+
+  /* ---------- Tacto (en px: no deben encogerse) ---------- */
+  --toque: 64px;              /* blanco mínimo de cualquier control de la persona */
+  --toque-principal: 80px;    /* botones de la barra fija */
+  --tecla: 52px;              /* círculo de la «tecla» dentro del botón de la barra */
+  --separa-peligro: 24px;     /* distancia mínima entre Terminar y cualquier otro control */
+  --barra-alto: 112px;        /* barra fija de abajo (la botonera) */
+  --cabecera-alto: 72px;
+
+  /* ---------- Forma ---------- */
+  --borde-1: 2px;  --borde-2: 3px;  --borde-3: 5px;  --borde-foco: 4px;
+  --radio-1: 4px;             /* tarjetas, cajas: casi rectas, como papel impreso */
+  --radio-2: 8px;             /* opciones, campos */
+  --radio-tecla: 999px;       /* solo la tecla redonda que copia el botón físico */
+  --canto: 0 5px 0;           /* borde duro bajo los botones de la barra (sin sombra difusa) */
+  --dur: 160ms;
+
+  /* ---------- Faja (identidad): zigzag y puntos genéricos, propios; no copia ningún textil ---------- */
+  --faja-alto: 10px;
+  --faja: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='10'%3E%3Crect width='24' height='10' fill='%23B5471F'/%3E%3Cpath d='M0 7.5 6 2.5 12 7.5 18 2.5 24 7.5' fill='none' stroke='%23F6EFE3' stroke-width='1.6'/%3E%3Crect x='5' y='7' width='2' height='2' fill='%232A1C15'/%3E%3Crect x='17' y='1' width='2' height='2' fill='%232A1C15'/%3E%3C/svg%3E");
+}
+
+/* ---------- Letra grande ---------- */
+:root[data-scale="lg"] {
+  --base: 28px;
+  --toque: 72px;
+  --toque-principal: 88px;
+  --tecla: 56px;
+  --barra-alto: 128px;
+  --cabecera-alto: 80px;
+}
+
+/* ---------- Modo oscuro (sigue al sistema salvo data-theme="light"; o se fuerza con data-theme="dark") ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --papel: #1E1512; --papel-2: #2A1F1A; --papel-3: #3A2C24; --hoja: #251A16;
+    --linea: #4A3A31; --linea-control: #A08D7C; --tinta-2: #C9B8A6; --tinta: #F3E9DC;
+    --picto-contorno: #F3E9DC;
+    --verde-suave: #1F3A29; --ambar-suave: #3C2A10; --rojo-suave: #3F1C19; --anil-suave: #1E2A44;
+    --barro: #E0724A;
+    --sem-verde-borde: #6FBF85; --sem-ambar-borde: #E2A93C; --sem-rojo-borde: #F28B82;
+    --sem-verde-texto: var(--tinta); --sem-ambar-texto: var(--tinta); --sem-rojo-texto: var(--tinta);
+    --no-borde: #F28B82; --no-icono: #F28B82; --urgente-borde: #F28B82;
+    --sigue-canto: #123620; --oir-canto: #13234A; --sigue-borde: #6FBF85; --oir-borde: #8FB8FF;
+    --identidad: #B5471F;
+    --foco: #8FB8FF;
+  }
+}
+:root[data-theme="dark"] {
+  --papel: #1E1512; --papel-2: #2A1F1A; --papel-3: #3A2C24; --hoja: #251A16;
+  --linea: #4A3A31; --linea-control: #A08D7C; --tinta-2: #C9B8A6; --tinta: #F3E9DC;
+  --picto-contorno: #F3E9DC;
+  --verde-suave: #1F3A29; --ambar-suave: #3C2A10; --rojo-suave: #3F1C19; --anil-suave: #1E2A44;
+  --barro: #E0724A;
+  --sem-verde-borde: #6FBF85; --sem-ambar-borde: #E2A93C; --sem-rojo-borde: #F28B82;
+  --sem-verde-texto: var(--tinta); --sem-ambar-texto: var(--tinta); --sem-rojo-texto: var(--tinta);
+  --no-borde: #F28B82; --no-icono: #F28B82; --urgente-borde: #F28B82;
+  --sigue-canto: #123620; --oir-canto: #13234A; --sigue-borde: #6FBF85; --oir-borde: #8FB8FF;
+  --identidad: #B5471F;
+  --foco: #8FB8FF;
+}
+
+/* ---------- Hoja impresa (carta, blanco y negro o color) ----------
+   El selector pesa lo mismo que los de modo oscuro y «Letra grande» y va después, así que gana siempre:
+   la hoja sale en tinta negra sobre blanco aunque el quiosco esté en oscuro o con letra grande. */
+@media print {
+  :root:is(:root, [data-theme], [data-scale], :not([data-theme="light"])) {
+    --base: 12pt;
+    --papel: #FFFFFF; --papel-2: #FFFFFF; --papel-3: #F2F2F2; --hoja: #FFFFFF;
+    --linea: #777777; --linea-control: #000000; --tinta-2: #222222; --tinta: #000000;
+    --picto-contorno: #2B1D16;
+    --verde-suave: #FFFFFF; --ambar-suave: #FFFFFF; --rojo-suave: #FFFFFF; --anil-suave: #FFFFFF;
+    --barro: #B5471F; --identidad: #B5471F;
+    --sem-verde-borde: #2E7346; --sem-ambar-borde: #9A5A0A; --sem-rojo-borde: #B3261E;
+    --sem-verde-texto: #000000; --sem-ambar-texto: #000000; --sem-rojo-texto: #000000;
+    --no-borde: #B3261E; --no-icono: #B3261E; --urgente-borde: #B3261E;
+    --sigue-borde: #2E7346; --oir-borde: #2B4C8C; --foco: #000000;
+    /* Tamaños de la hoja: nivel 16 pt, «Qué hacer ahora» 12 pt, ideas y «Cuándo ir» 11–12 pt */
+    --t-min: 11pt; --t-cuerpo: 12pt; --t-destacado: 12pt; --t-titulo-3: 13pt; --t-titulo-2: 14pt;
+    --t-titulo-1: 16pt; --t-heroe: 16pt; --t-911: 22pt; --t-vivo: 16pt;
+    --pict-hoja: 12mm;        /* dibujo junto a cada idea */
+    --forma-nivel: 25mm;      /* forma del semáforo arriba a la izquierda */
+  }
+}

@@ -1,8 +1,9 @@
-/* MediBot · proceso principal de Electron (v0.3.1).
+/* MediBot · proceso principal de Electron (v0.3.1, tras la revisión del 2026-09-20).
    - Abre la misma app web (../index.html o resources/web/index.html cuando está empaquetada).
    - Concede el permiso del puerto serie sin diálogo y elige el ESP32 por fabricante (Espressif, CP210x, CH340, FTDI, Arduino).
    - Pantalla completa tipo quiosco, sin menú, sin navegación externa, pantalla siempre encendida; se recupera si el contenido se cae.
    - Salida para el operador: Ctrl+Alt+Shift+Q (atajo global y respaldo dentro de la ventana).
+   - Impresión silenciosa en la impresora predeterminada (IPC "medibot:imprimir"), sin diálogo del sistema.
    - Ventana normal para desarrollo: MEDIBOT_VENTANA=1. Autoprueba: MEDIBOT_PRUEBA=1. Sin aceleración de GPU: MEDIBOT_SIN_GPU=1 */
 "use strict";
 const { app, BrowserWindow, session, Menu, globalShortcut, shell, powerSaveBlocker, ipcMain } = require("electron");
@@ -102,7 +103,8 @@ function autoprueba() {
         serial: "serial" in navigator, seguro: window.isSecureContext, origen: location.origin,
         puertosAutorizados: "serial" in navigator ? (await navigator.serial.getPorts()).length : -1,
         modoSensores: window.MediBotSensores && window.MediBotSensores.modo,
-        version: window.MediBotData && window.MediBotData.textos.version
+        version: window.MediBotData && window.MediBotData.textos.version,
+        imprimir: !!window.medibotEscritorio && typeof window.medibotEscritorio.imprimir === "function"
       }))()`);
       console.log("AUTOPRUEBA " + JSON.stringify(r));
       if (process.env.MEDIBOT_PRUEBA_HID === "1") {
@@ -117,6 +119,28 @@ function autoprueba() {
 }
 
 ipcMain.on("medibot:salir", () => { permitirCerrar = true; app.quit(); }); // botón "Salir" del panel de operador
+
+// Impresión silenciosa: en el quiosco el diálogo del sistema no se puede operar con los 3 botones físicos.
+// Usa la impresora predeterminada. Siempre resuelve { ok, motivo } (nunca rechaza) y no se cuelga: tope de 60 s.
+const LIMITE_IMPRESION_MS = 60_000;
+let imprimiendo = false;
+ipcMain.handle("medibot:imprimir", (event) => new Promise((resolver) => {
+  if (imprimiendo) { resolver({ ok: false, motivo: "ocupado" }); return; } // doble pulsación: no encolar dos hojas
+  const wc = event.sender;
+  if (!wc || wc.isDestroyed()) { resolver({ ok: false, motivo: "ventana" }); return; }
+  imprimiendo = true;
+  let hecho = false;
+  const terminar = (ok, motivo) => {
+    if (hecho) return;
+    hecho = true; imprimiendo = false; clearTimeout(reloj);
+    if (!ok) console.warn("Impresión fallida:", motivo || "(sin motivo)");
+    resolver({ ok, motivo });
+  };
+  const reloj = setTimeout(() => terminar(false, "tiempo"), LIMITE_IMPRESION_MS);
+  try {
+    wc.print({ silent: true, printBackground: true }, (success, failureReason) => terminar(!!success, failureReason || ""));
+  } catch (e) { terminar(false, String((e && e.message) || e)); } // p. ej. opciones inválidas: print() lanza en vez de llamar al callback
+}));
 
 app.whenReady().then(() => {
   if (!fs.existsSync(INDEX)) { console.error("No encuentro la app web en", INDEX); app.quit(); return; }

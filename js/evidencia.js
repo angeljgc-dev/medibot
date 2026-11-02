@@ -65,23 +65,25 @@
     if (window.medibotEscritorio) { const re = setInterval(() => { if (!document.contains(estado)) { clearInterval(re); return; } if (!E.device) arrancar(); }, 5000); }
     arrancar();
 
-    return h("section.pantalla",
-      h("div.cabecera", h("div.kicker", "Modo evidencia · ¿qué manda el aparato del QRMA?"), h("h1", "Lo que el aparato dice, tal cual"),
+    const nodo = h("section.vista",
+      h("div.titulo-pantalla", h("h1", "Lo que el aparato dice, tal cual"),
         h("p", "Esta pantalla no interpreta nada. Muestra los bytes que el sensor de mano envía por USB. Si de verdad midiera tu cuerpo, tendrían que cambiar al poner o quitar la mano. Prueba: mano puesta, mano quitada, una naranja.")),
-      h("div.tarjeta", estado, h("div.medida__acciones", { style: "margin-top:.6rem" }, btnConectar, btnReiniciar)),
-      h("div.rejilla", { style: "margin-top:1rem" },
+      h("div.tarjeta", estado, h("div.medida__acciones", btnConectar, btnReiniciar)),
+      h("div.rejilla",
         h("div.tarjeta", h("h2", "Reportes recibidos"), h("p.medida__valor", nTotal), h("p", nSeg, " por segundo · ", seg, " s escuchando")),
         h("div.tarjeta", h("h2", "Patrones distintos"), h("p.medida__valor", nDist), h("p", "Un sensor real cambia con la mano. Un patrón único que se repite es una señal de presencia, no una medición.")),
         h("div.tarjeta", h("h2", "Último reporte (8 bytes)"), h("p", ult))),
-      h("div.tarjeta", { style: "margin-top:1rem" }, h("h2", "Patrones vistos"), listaPat),
-      h("div.tarjeta.tarjeta--plana", { style: "margin-top:1rem" },
+      h("div.tarjeta", h("h2", "Patrones vistos"), listaPat),
+      h("div.tarjeta.tarjeta--plana",
         h("h2", "Qué significa"),
         h("ul",
           h("li", "Hallazgo del 2026-09-20 en el taller: 1,329 reportes en 40 s, todos iguales (08 a4 01 02 03 04 05 06), con la mano puesta y sin ella."),
           h("li", "Los 'resultados' del QRMA son frases precargadas (R01A…R62B) en su base de datos, elegidas por un número; este aparato no aporta ese número desde el cuerpo."),
           h("li", "MediBot nunca usa estos bytes para orientar a nadie. Sus mediciones vienen del ESP32 con sensores que se pueden comprobar con una pesa y un termómetro."))),
-      h("div.acciones", h("button.btn.btn--secundario", { type: "button", onclick: () => { clearInterval(tick); ctx.terminar(); } }, icono("i-back"), "Volver al inicio"))
+      h("div.acciones", h("button.btn.btn--secundario", { type: "button", onclick: () => { clearInterval(tick); ctx.abrirOperador(); } }, icono("i-back"), "Volver al panel"))
     );
+    nodo._titulo = "Panel del operador · Evidencia QRMA";
+    return nodo;
   }
   window.MediBotPantallas.evidencia = evidencia;
 })();

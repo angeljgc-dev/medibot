@@ -45,6 +45,22 @@
     return svg;
   }
 
+  /** Pictograma del sistema de diseño (assets/pictos, sprite en index.html): pic("p-frijol") o pic("p-frijol", { etiqueta: "Frijol" }).
+      Sin etiqueta es decorativo (aria-hidden); con etiqueta, el dibujo es el rótulo (role="img"). */
+  function pic(id, opc) {
+    const o = opc || {};
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("class", "pic" + (o.clase ? " " + o.clase : ""));
+    if (o.etiqueta) { svg.setAttribute("role", "img"); svg.setAttribute("aria-label", o.etiqueta); }
+    else svg.setAttribute("aria-hidden", "true");
+    svg.setAttribute("focusable", "false");
+    svg.dataset.pic = id;
+    const use = document.createElementNS(SVG_NS, "use");
+    use.setAttribute("href", "#" + id);
+    svg.appendChild(use);
+    return svg;
+  }
+
   function fmt(n, dec) {
     if (n === null || n === undefined || Number.isNaN(n)) return "—";
     return Number(n).toLocaleString("es-MX", { minimumFractionDigits: dec || 0, maximumFractionDigits: dec || 0 });
@@ -61,5 +77,5 @@
 
   function esperar(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  window.U = { h, append, icono, fmt, limitar, fuenteEl, esperar, $: (s, r) => (r || document).querySelector(s), $$: (s, r) => Array.from((r || document).querySelectorAll(s)) };
+  window.U = { h, append, icono, pic, fmt, limitar, fuenteEl, esperar, $: (s, r) => (r || document).querySelector(s), $$: (s, r) => Array.from((r || document).querySelectorAll(s)) };
 })();
