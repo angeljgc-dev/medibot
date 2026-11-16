@@ -14,10 +14,10 @@ Revisa data/*.js y falla (código de salida 1) si:
      Art. SEGUNDO con leyenda de embarazo; `sin_cambio` con `alternativas` vacía; `avisos_perfil`, `actividad` y
      `ocultar_si` (temas) con valores conocidos; vocabulario
      prohibido en `para`/`aviso`/`si_no_hay`/`como`/`cuanto_ninos`/`nombre` y palabras difíciles en pantalla ("nutrimento", "UI", "anticoagulante").
-  7. data/cuidado.js (criterio 16): campos, ids de `en_su_lugar` y `secciones` existentes en el corpus, alternativas que
+  7. data/cuidado.js: campos, ids de `en_su_lugar` y `secciones` existentes en el corpus, alternativas que
      no son del Art. PRIMERO, fuentes https (al menos una oficial), perfiles conocidos, mismas palabras prohibidas.
      Pruebas: `--cuidado RUTA` (se compara con el corpus de `--corpus`).
-  8. data/lugares.js (criterio 17): líneas nacionales con fuente https y voz agrupada, «079, opción 1», nada de
+  8. data/lugares.js: líneas nacionales con fuente https y voz agrupada, «079, opción 1», nada de
      `no_mostrar` visible, 911 sin «gratis», plantilla sin marcadores y con teléfonos válidos. Pruebas: `--lugares RUTA`.
 
 Uso:  python tools/lint_contenido.py        (desde la carpeta MediBot)
@@ -177,7 +177,7 @@ PRIORIZA = {"fiebre", "imc_alto", "imc_bajo", "embarazo", "nino", "mayor60", "az
 # escribe «Digital purpurea», «Veratum», «Gorinanthe»…); los comunes se buscan como palabra completa en el nombre de
 # plantas y suplementos. «Matricaria» (fracc. XXI) NO se busca como nombre común: la manzanilla es Matricaria
 # chamomilla y está permitida. Nombres comunes que en México también nombran otra planta (uña de gato, orozuz,
-# madreselva) se marcan igual: el criterio 14 tampoco admite plantas que se confundan con una prohibida.
+# madreselva) se marcan igual: la regla tampoco admite plantas que se confundan con una prohibida.
 ART_PRIMERO = [
     ("I", [r"acacia gregg?ii"], [r"acacia"]), ("II", [r"aconitum"], [r"ac[oó]nito"]), ("III", [r"acorus calamus"], [r"c[aá]lamo"]),
     ("IV", [r"aesculus hippocastanum"], [r"casta[nñ]o de indias"]), ("V", [r"apocynum cannabi"], [r"c[aá][nñ]amo de canad[aá]", r"apocino"]),
@@ -428,7 +428,7 @@ if RUTA_CORPUS.exists():
             if pant:
                 err(f"{donde}.{campo}: palabra difícil o prohibida en pantalla {pant} en: «{texto[:90]}»")
 
-# --- Regla 7: «Cuidado con esto» (data/cuidado.js, criterio 16) ----------------------------------
+# --- Regla 7: «Cuidado con esto» (data/cuidado.js) ----------------------------------
 # Mismas listas de palabras que el corpus. Los ids de `en_su_lugar` y `secciones` se buscan en el corpus real; con
 # `--cuidado RUTA` (pruebas) se buscan en el corpus de `--corpus`. Las tarjetas nombran plantas del Art. PRIMERO a
 # propósito (son el aviso); lo que no puede ser del Art. PRIMERO es la alternativa de «en su lugar».
@@ -508,7 +508,7 @@ if RUTA_CUIDADO.exists():
         if buscar(PROHIBIDO_PRODUCTO + PROHIBIDO_GENERAL, limpiar(t)):
             err(f"[cuidado] {ruta}: palabra prohibida en «{t}»")
 
-# --- Regla 8: «¿A dónde voy?» (data/lugares.js, criterio 17) -------------------------------------
+# --- Regla 8: «¿A dónde voy?» (data/lugares.js) -------------------------------------
 # Solo líneas nacionales verificadas, con fuente https; el 079 siempre «079, opción 1»; nada de `no_mostrar` en las
 # líneas visibles; la plantilla de la unidad sin marcadores («[nombre]») y con teléfonos vacíos o de 10 dígitos válidos.
 MARCADOR = re.compile(r"[\[\]{}<>]|^[\s\-—–_.?¿!0]*$|^(x+|n/?a|s/?n|tbd|pendiente|por (definir|confirmar)|sin (dato|datos|tel[eé]fono|n[uú]mero)|ninguno|no s[eé]|no hay)$", re.I)
@@ -564,7 +564,7 @@ if RUTA_LUGARES.exists():
         if buscar(PROHIBIDO_PRODUCTO + PROHIBIDO_GENERAL, limpiar(t)):
             err(f"[lugares] {ruta}: palabra prohibida en «{t}»")
 
-# --- Ronda de correcciones, criterio 40: campos para no mostrar a menores lo que es de adultos ---------------------------
+# --- Ronda de correcciones: campos para no mostrar a menores lo que es de adultos ---------------------------
 if RUTA_CORPUS.exists():
     for e in corpus.get("entradas", []):
         frases = e.get("aviso_no_ninos")
@@ -608,16 +608,16 @@ for parte in ("gratis", "no soy", "9 1 1", "nombre", "borra", "azul", "verde"):
     if parte not in vb:
         err(f"[textos] voz_corta.bienvenida: falta «{parte}» (mínimo que no se quita; «gratis» se confirmó el 2026-11-02)")
 if "gratis" not in str((textos.get("bienvenida") or {}).get("gratis", "")).lower():
-    err("[textos] bienvenida.gratis: la bienvenida debe decir en pantalla que es gratis (criterio 25)")
+    err("[textos] bienvenida.gratis: la bienvenida debe decir en pantalla que es gratis")
 
-# Criterio 23: sin emoji en js/ ni en data/textos.js (salvo líneas marcadas «permitido-emoji», p. ej. el filtro de la voz)
+# Sin emoji en js/ ni en data/textos.js (salvo líneas marcadas «permitido-emoji», p. ej. el filtro de la voz)
 EMOJI = re.compile("[🀀-🫿☀-➿⬀-⯿️]")
 for arch in sorted((RAIZ / "js").glob("*.js")) + [DATA / "textos.js"]:
     for i, linea in enumerate(arch.read_text(encoding="utf-8").splitlines(), 1):
         if EMOJI.search(linea) and "permitido-emoji" not in linea:
             err(f"[emoji] {arch.relative_to(RAIZ).as_posix()}:{i}: usa un pictograma del sprite (assets/pictos), no emoji")
 
-# Criterio 20: css/app.css y css/print.css solo con tokens (sin colores hex sueltos); css/tokens.css igual al aprobado
+# css/app.css y css/print.css solo con tokens (sin colores hex sueltos); css/tokens.css igual al aprobado
 for arch in (RAIZ / "css" / "app.css", RAIZ / "css" / "print.css"):
     if arch.exists():
         for i, linea in enumerate(arch.read_text(encoding="utf-8").splitlines(), 1):
@@ -635,12 +635,12 @@ import subprocess as _sp
 _r = _sp.run([sys.executable, str(RAIZ / "tools" / "generar_pictos.py"), "--revisar"], capture_output=True, text=True, encoding="utf-8")
 if _r.returncode:
     err("[pictos] " + (_r.stdout or _r.stderr).strip())
-# Criterio 77: los SVG pasan la lista permitida (sin scripts ni enlaces) y solo usan la paleta «A · Bordado»
+# Los SVG pasan la lista permitida (sin scripts ni enlaces) y solo usan la paleta «A · Bordado»
 _v = _sp.run([sys.executable, str(RAIZ / "docs" / "diseno" / "herramientas" / "validar_pictos.py")], capture_output=True, text=True, encoding="utf-8")
 if _v.returncode:
     err("[pictos] " + " | ".join(l for l in (_v.stdout or _v.stderr).splitlines() if l.startswith("FALLA"))[:600])
 
-# Criterio 78: lo que ve la persona o el operador no remite a documentos internos que no existen para quien instala MediBot.
+# Lo que ve la persona o el operador no remite a documentos internos que no existen para quien instala MediBot.
 # Se revisan las cadenas (no los comentarios) de data/*.js y de js/pantallas.js.
 INTERNO = re.compile(r"docs/investigacion|dictamen|§B\.", re.I)
 def cadenas_js(txt: str):

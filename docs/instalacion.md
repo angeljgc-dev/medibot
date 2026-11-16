@@ -12,7 +12,7 @@ Para cerrarla:
 
 - Con teclado: **Ctrl+Alt+Shift+Q**.
 - Sin teclado: en la pantalla de inicio, mantén apretado **"Cerrar MediBot"** (abajo a la derecha; en pantallas chicas está al final del inicio, desliza hacia arriba) 3 segundos y toca **"Sí, cerrar"**. El botón verde y Enter nunca la cierran, y si nadie contesta en 15 segundos la pregunta se quita sola.
-- Desde el panel del operador: **"Salir de la aplicación"**.
+- Desde el panel del operador: **"Salir de la aplicación"** y luego **"Sí, cerrar"** en el mismo diálogo de MediBot.
 
 Para quitar el arranque automático, borra `MediBot.lnk` de la carpeta que abre `shell:startup`.
 
@@ -59,6 +59,7 @@ Opciones para probar:
 | `MEDIBOT_VENTANA=1` | Abre en ventana normal con herramientas de desarrollo (F12) |
 | `MEDIBOT_PRUEBA=1` | Imprime una línea `AUTOPRUEBA {...}` con el estado de la app y se cierra |
 | `MEDIBOT_SIN_GPU=1` | Desactiva la aceleración gráfica (para computadoras viejas) |
+| `MEDIBOT_OCULTA=1` | No muestra la ventana (para pruebas automáticas que no deben aparecer en la pantalla) |
 
 ## Cómo encuentra el puerto
 

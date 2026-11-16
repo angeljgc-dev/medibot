@@ -1,4 +1,4 @@
-/* «¿A dónde voy?» v1.0 (2026-11-02), criterio 17. Guía de llenado: docs/guia_lugares.md.
+/* «¿A dónde voy?» v1.0 (2026-11-02). Guía de llenado: docs/guia_lugares.md.
    - `nacionales`: solo líneas VERIFICADAS en fuente oficial. `voz` es como se dicen los números (en grupos).
      Al 911 no se le pone «gratis» (la regla vigente de gratuidad sin saldo no está verificada).
    - `unidad`: plantilla editable a mano por la comunidad. La configuración que guarda el operador en el equipo

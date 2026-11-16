@@ -276,13 +276,13 @@ Dibujo de **cómo** se hace a 160 px (`p-medir-oximetro`, `p-medir-termometro`, 
 ## 7. Modo oscuro y «Letra grande»
 
 - **Oscuro** (sigue al sistema o `data-theme="dark"`): papel café muy oscuro #1E1512, tinta crema #F3E9DC. Los sólidos del semáforo y del añil **no cambian** (el blanco encima sigue en 5.5–8.4:1); cambian los bordes e iconos sobre papel a sus versiones claras (#6FBF85, #E2A93C, #F28B82, #8FB8FF) y los fondos suaves a tonos oscuros. Los botones verde y azul ganan un borde claro para que su silueta tenga 3:1 contra el fondo (sin él, el azul daba 2.15:1: el script lo detectó y se corrigió). La forma del héroe y las teclas roja y azul llevan un anillo del color de borde: en claro no se nota y en oscuro dibuja su silueta con 3:1 o más. La cruz del logo queda en barro original. Los dibujos cambian solos: su contorno es el token `--picto-contorno` (#2B1D16 en claro, crema #F3E9DC en oscuro, #2B1D16 en la hoja impresa) y los glifos usan `currentColor`.
-- **Letra grande** (`data-scale="lg"`): `--base` 28 px, toques de 72 px, barra de 128 px. El resultado rojo muestra la caja del 911 completa, sin desplazar, a 375×812 y 1280×800, también con «Letra grande» y en claro y oscuro, en los 6 rojos (oxígeno y las 5 preguntas rojas): el encabezado rojo dice el porqué en una línea corta y, con letra grande, la caja se compacta (ronda de correcciones, criterio 32, medido con `tools/e2e_ronda2.py`). Antes de esa ronda esto NO se cumplía con letra grande ni con las preguntas rojas a 375; las pantallas de ideas y de resultado amarillo **sí se desplazan** en el centro (la barra queda fija). Es el costo de +40 % de letra y está medido (§12).
+- **Letra grande** (`data-scale="lg"`): `--base` 28 px, toques de 72 px, barra de 128 px. El resultado rojo muestra la caja del 911 completa, sin desplazar, a 375×812 y 1280×800, también con «Letra grande» y en claro y oscuro, en los 6 rojos (oxígeno y las 5 preguntas rojas): el encabezado rojo dice el porqué en una línea corta y, con letra grande, la caja se compacta (ronda de correcciones, medido con `tools/e2e_ronda2.py`). Antes de esa ronda esto NO se cumplía con letra grande ni con las preguntas rojas a 375; las pantallas de ideas y de resultado amarillo **sí se desplazan** en el centro (la barra queda fija). Es el costo de +40 % de letra y está medido (§12).
 
 ---
 
 ## 8. Pictogramas
 
-### 8.1 Estilo «A · Bordado» (criterio 77, decisión de diseño del 2026-11-02)
+### 8.1 Estilo «A · Bordado» (decisión de diseño del 2026-11-02)
 
 - viewBox `0 0 64 64`, fondo transparente, `<title>` en español.
 - **Dibujos**: formas planas con contorno de 2.5 (detalles de 1.2 a 1.8), uniones y puntas redondas. El contorno de lo que
@@ -310,11 +310,11 @@ grana #B3261E · añil #2F4F8F · ocre #D49A2A · verde #3E7D4F · piel #8A5A3C 
 contorno #2B1D16. Ningún otro color: lo revisan `tests/pictos.test.mjs` y `docs/diseno/herramientas/validar_pictos.py`
 (este último también desde el lint).
 
-### 8.3 Inventario (75; los mismos ids y archivos desde la v0.4)
+### 8.3 Inventario (78: los 75 de la v0.4 + `p-mujer`, `p-hombre` y `p-no-decir` de la v0.6)
 
 | Grupo | Ids |
 |---|---|
-| Personas (7) | `p-adulto`, `p-mayor`, `p-embarazada`, `p-lactancia`, `p-nino`, `p-bebe`, `p-otra-persona` |
+| Personas (10) | `p-adulto`, `p-mayor`, `p-embarazada`, `p-lactancia`, `p-nino`, `p-bebe`, `p-otra-persona`, `p-mujer`, `p-hombre` (pregunta de sexo), `p-no-decir` («Prefiero no decir» en sexo y embarazo) |
 | Mediciones (4) | `p-medir-oximetro`, `p-medir-termometro`, `p-medir-bascula`, `p-medir-estatura` |
 | Acciones (10) | `p-escuchar`, `p-imprimir`, `p-siguiente`, `p-anterior`, `p-si`, `p-no`, `p-terminar`, `p-centro-salud`, `p-llamar-911`, `p-alerta` |
 | Semáforo (3) | `p-nivel-verde`, `p-nivel-ambar`, `p-nivel-rojo` |

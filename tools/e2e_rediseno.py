@@ -1,6 +1,5 @@
-"""Pruebas en el navegador del rediseño v0.5 (docs/diseno/sistema.md, criterios 20–31) y de los paquetes A1–A10 del
-rediseño (A1 simulación, A2 imprimir, A3 medicinas, A4 regresar, A5 alarma, A6 rojo, A7 colores, A8 voz corta, A9
-temperatura, A10 peso). Una sección por paquete; cada revisión dice qué comprueba.
+"""Pruebas en el navegador del rediseño v0.5 (docs/diseno/sistema.md) y de los diez paquetes del
+rediseño (simulación, imprimir, medicinas, regresar, alarma, rojo, colores, voz corta, temperatura y peso). Una sección por paquete; cada revisión dice qué comprueba.
 Uso (desde la carpeta MediBot):  PYTHONUTF8=1 python tools/e2e_rediseno.py [--capturas DIR]
 Requiere Playwright para Python con chromium. Levanta `python -m http.server` y lo detiene por su PID."""
 import argparse, json, pathlib, re, socket, subprocess, sys, time
@@ -56,7 +55,7 @@ def main() -> None:
                 # Sin bocinas: la voz del sistema no habla (sus eventos llegarían en tiempo real y moverían los tiempos de
                 # inactividad del reloj falso); lo dicho se revisa en MediBotVoz.ultimoTexto, que no cambia.
                 ctx.add_init_script("window.__impresiones = 0; window.print = () => { window.__impresiones++; }; try { localStorage.clear(); } catch (e) { console.warn(e.message); }"
-                                    " if (window.speechSynthesis) { speechSynthesis.speak = () => {}; }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))  # criterio 79: de fábrica es claro; el oscuro se fuerza como lo elegiría el operador
+                                    " if (window.speechSynthesis) { speechSynthesis.speak = () => {}; }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))  # De fábrica es claro; el oscuro se fuerza como lo elegiría el operador
                 if init: ctx.add_init_script(init)
                 pg = ctx.new_page()
                 if reloj: pg.clock.install()
@@ -83,8 +82,8 @@ def main() -> None:
                 const b = document.querySelector('.botonera').getBoundingClientRect();
                 return r.top >= 0 && r.left >= 0 && r.right <= innerWidth && r.bottom <= Math.min(innerHeight, b.top) + 0.5; }""", sel)
 
-            # ------------------------------------------------------------------------------------------------ A1
-            print("A1 · simulación: panel oculto, solo con el gesto; terminar la apaga; DEMOSTRACIÓN en todo")
+            # ------------------------------------------------------------------------------------------------ Simulación
+            print("Simulación: panel oculto, solo con el gesto; terminar la apaga; DEMOSTRACIÓN en todo")
             pg = pagina()
             revisa(pg.locator(".operador").count() == 0, "en el reposo no existe el panel del operador")
             pie = pg.evaluate("() => document.getElementById('pie').textContent")
@@ -107,7 +106,7 @@ def main() -> None:
             pg.emulate_media(media="print")
             revisa(pg.evaluate("() => getComputedStyle(document.getElementById('demo')).display") != "none", "y en la hoja impresa (emulateMedia print)")
             pg.emulate_media(media="screen")
-            pg.evaluate("() => { const M = window.MediBot; M.ir('sobreTi'); Object.assign(M.sesion, { paraQuien: 'yo', grupo: '18a59' }); M.ir('mediciones', { medicion: 2 }); }")  # criterio 41: se pesa en «Te medimos»
+            pg.evaluate("() => { const M = window.MediBot; M.ir('sobreTi'); Object.assign(M.sesion, { paraQuien: 'yo', grupo: '18a59' }); M.ir('mediciones', { medicion: 2 }); }")  # Se pesa en «Te medimos»
             pg.wait_for_function("() => window.MediBot.sesion.peso.origen", timeout=25000)
             revisa(sesion(pg)["peso"]["origen"] == "simulado", f"una medida simulada se guarda con origen «simulado»: {sesion(pg)['peso']}")
             pg.evaluate("() => window.MediBot.terminar()"); pg.wait_for_timeout(100)
@@ -120,11 +119,11 @@ def main() -> None:
             revisa("panel del operador" in r and pe.evaluate("() => window.MediBot.sensores.modo") == "desconectado", f"en el quiosco, la simulación no se enciende fuera del panel: «{r}»")
             pe.close()
 
-            # ------------------------------------------------------------------------------------------------ A10
-            print("A10 · peso confiable")
+            # ------------------------------------------------------------------------------------------------ Peso
+            print("Peso confiable")
             pg = pagina()
             pg.keyboard.press("Control+Alt+Shift+KeyO"); pg.select_option(".operador select", "normal"); pg.wait_for_timeout(100)
-            pg.evaluate("() => { const M = window.MediBot; M.ir('bienvenida'); Object.assign(M.sesion, { paraQuien: 'yo', grupo: '18a59' }); M.ir('mediciones', { medicion: 2 }); }")  # criterio 41
+            pg.evaluate("() => { const M = window.MediBot; M.ir('bienvenida'); Object.assign(M.sesion, { paraQuien: 'yo', grupo: '18a59' }); M.ir('mediciones', { medicion: 2 }); }")
             pg.wait_for_function("() => /Pesando|Leyendo|Casi/.test(document.querySelector('[data-medicion=peso] .medicion__estado').textContent)", timeout=10000)
             pg.fill("#peso", "95"); pg.wait_for_timeout(14000)  # la báscula termina de pesar (12 s) con el 95 ya escrito
             revisa(sesion(pg)["peso"] == {"valor": 95, "origen": "manual"} and pg.input_value("#peso") == "95", f"escrito a mano mientras la báscula pesaba, el peso se queda: {sesion(pg)['peso']}")
@@ -138,8 +137,8 @@ def main() -> None:
             revisa("± 0.5" not in pg.inner_text("body"), "el DOM no dice «± 0.5»")
             pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A3
-            print("A3 · medicinas en positivo y recorrido que no pisa lo tocado")
+            # ------------------------------------------------------------------------------------------------ Medicinas
+            print("Medicinas en positivo y recorrido que no pisa lo tocado")
             pg = pagina()
             ir(pg, "medicinas", {"paraQuien": "yo", "grupo": "18a59", "medicinas": []})
             g = voz(pg)
@@ -177,8 +176,8 @@ def main() -> None:
             revisa(not t.startswith("Listo."), "después de N la voz no empieza con «Listo.»: " + t[:50])
             pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A4
-            print("A4 · el rojo no regresa callado; Terminar y el logo abren dlg-borrar")
+            # ------------------------------------------------------------------------------------------------ Regresar
+            print("El rojo no regresa callado; Terminar y el logo abren dlg-borrar")
             pg = pagina(reloj=True)
             dialogos_nativos = []
             pg.on("dialog", lambda d: (dialogos_nativos.append(d.message), d.dismiss()))
@@ -217,8 +216,8 @@ def main() -> None:
             revisa(pg.locator(".cabecera [data-accion=tema]").count() == 0, "el botón de tema no está en la barra pública")
             pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A2
-            print("A2 · imprimir con los botones y tiempos por pantalla")
+            # ------------------------------------------------------------------------------------------------ Imprimir
+            print("Imprimir con los botones y tiempos por pantalla")
             pg = pagina(reloj=True)
             ir(pg, "resumen", ADULTO)
             g = voz(pg)
@@ -258,8 +257,8 @@ def main() -> None:
             main_js = (raiz / "escritorio" / "main.js").read_text(encoding="utf-8"); pre_js = (raiz / "escritorio" / "preload.js").read_text(encoding="utf-8")
             revisa("imprimir" in pre_js and re.search(r"print\(\{\s*silent:\s*true", main_js) is not None, "preload expone imprimir() y main.js llama print({ silent: true … })")
 
-            # ------------------------------------------------------------------------------------------------ A5
-            print("A5 · alarma roja: se ve y un «sí» por error se corrige")
+            # ------------------------------------------------------------------------------------------------ Alarma
+            print("Alarma roja: se ve y un «sí» por error se corrige")
             pg = pagina(reloj=True)
             ir(pg, "alarma", {"paraQuien": "yo", "grupo": "18a59", "medicinas": ["ninguna"]}, alarma_vacia=True)
             t = accion(pg, "si")
@@ -279,8 +278,8 @@ def main() -> None:
             revisa("Dijiste que sí a" in g and "tosiendo" in g and "Ya respondiste todas" not in g and "pecho" not in g.split("Pregunta")[0], "desde «Corregir respuestas» la voz enumera solo los «sí»: " + g[:100])
             pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A6
-            print("A6 · resultado rojo: el 911 primero, completo y sin lo demás")
+            # ------------------------------------------------------------------------------------------------ Rojo
+            print("Resultado rojo: el 911 primero, completo y sin lo demás")
             for (w, h) in [(1280, 800), (375, 812)]:
                 pg = pagina(w, h)
                 ir(pg, "resultado", ADULTO, medidas=[80, 84, None])
@@ -300,8 +299,8 @@ def main() -> None:
                 captura(pg, f"rojo_{w}")
                 pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A7
-            print("A7 · colores con un solo significado y botonera fija")
+            # ------------------------------------------------------------------------------------------------ Colores
+            print("Colores con un solo significado y botonera fija")
             for tema in ["light", "dark"]:
                 pg = pagina(tema=tema)
                 ir(pg, "bienvenida", {})
@@ -331,8 +330,8 @@ def main() -> None:
                 revisa(pg.evaluate("() => getComputedStyle(document.querySelector('.botonera')).display") == "none", f"{w}: la botonera no se imprime")
                 pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A8
-            print("A8 · voz corta con el mínimo que no se quita")
+            # ------------------------------------------------------------------------------------------------ Voz corta
+            print("Voz corta con el mínimo que no se quita")
             pg = pagina()
             ir(pg, "bienvenida", {})
             g = voz(pg)
@@ -346,7 +345,7 @@ def main() -> None:
             texto_inc = pg.evaluate("() => window.MediBotData.textos.datos_incompletos.texto")
             revisa(texto_inc in g, "con una medición omitida, la voz lee «datos incompletos»")
             ir(pg, "resultado", {"paraQuien": "nino", "grupo": "nino", "edadNino": "6a11", "medicinas": ["ninguna"], "categorias": ["boca"]}, medidas=[100, 97, 36.6]); g = voz(pg)
-            revisa("sin color" not in g and "rango de su edad" in g, "en un niño sin clasificar, la voz dice que se compara con el rango de su edad (criterio 39: ya no «sin color»)")
+            revisa("sin color" not in g and "rango de su edad" in g, "en un niño sin clasificar, la voz dice que se compara con el rango de su edad (ya no «sin color»)")
             ir(pg, "fichas", ADULTO)
             n_ideas = pg.locator("[data-item=idea]").count(); dichos = [voz(pg)]
             for _ in range(pg.locator("[data-item]").count() + 1):
@@ -366,8 +365,8 @@ def main() -> None:
             voces.extend(dichos)
             pg.close()
 
-            # ------------------------------------------------------------------------------------------------ A9
-            print("A9 · temperatura hasta que se estabilice")
+            # ------------------------------------------------------------------------------------------------ Temperatura
+            print("Temperatura hasta que se estabilice")
             pan_js = (raiz / "js" / "pantallas.js").read_text(encoding="utf-8")
             revisa("segundos: 20" not in pan_js, "pantallas.js ya no mide la temperatura con «segundos: 20»")
             pg = pagina()
@@ -410,7 +409,7 @@ def main() -> None:
             revisa("Es gratis. No guardamos tu nombre ni tus datos." in pg.inner_text(".privacidad"), "y el aviso de privacidad también")
             pg.close()
 
-            # ------------------------------------------------------------------------------------------------ Criterio 30
+            # ------------------------------------------------------------------------------------------------ Hoja en tinta
             print("C30 · la hoja sale en tinta negra sobre blanco y en una carta, aunque el quiosco esté oscuro y con letra grande")
             pg = pagina(tema="dark")
             pg.evaluate("() => { document.documentElement.dataset.scale = 'lg'; }")
@@ -425,7 +424,7 @@ def main() -> None:
             pg.close()
 
             # ------------------------------------------------------------------------------------------------ Revisión
-            print("Hallazgos de la revisión independiente: verde largo, saltar una medición, Escape, valores imposibles")
+            print("Casos de la revisión independiente: verde largo, saltar una medición, Escape, valores imposibles")
             pg = pagina(reloj=True)
             ir(pg, "sobreTi", {})
             revisa(pg.evaluate("() => document.querySelector('.botonera [data-boton=verde] small').textContent") == "verde largo", "en las pantallas con recorrido, el verde de la pantalla es el «verde largo» (el corto contesta la voz)")
@@ -434,7 +433,7 @@ def main() -> None:
             pg.clock.fast_forward(31000); pg.wait_for_timeout(60)
             revisa(pg.locator("#dlg-borrar[open]").count() == 0 and sesion(pg)["grupo"] == "18a59" and pantalla(pg) == "sobreTi", "Escape en «¿Quieres seguir?» = seguir (no queda una cuenta escondida que borre todo)")
             ir(pg, "mediciones", {"paraQuien": "yo", "grupo": "18a59"}, medidas=[None, None, None], opciones={"medicion": 1})
-            pg.click("[data-medicion=temp] >> text=Escribir a mano"); pg.fill("#m-temp", "0"); pg.press("#m-temp", "Enter"); pg.wait_for_timeout(40)  # ronda 3, criterio 56: se confirma
+            pg.click("[data-medicion=temp] >> text=Escribir a mano"); pg.fill("#m-temp", "0"); pg.press("#m-temp", "Enter"); pg.wait_for_timeout(40)  # Se confirma
             revisa(sesion(pg)["medidas"]["temp"]["estado"] == "invalida", "una temperatura escrita fuera de lo que mide el aparato (0 °C) es «no válida», no válida")
             pg.close()
             pg = pagina()
@@ -443,7 +442,7 @@ def main() -> None:
             accion(pg, "si"); pg.wait_for_timeout(1500)
             revisa(texto_boton(pg, "rojo") == "Saltar", "midiendo la temperatura, el rojo dice «Saltar»")
             accion(pg, "no"); pg.wait_for_timeout(2500)
-            revisa(pg.locator("[data-medicion=peso]:not([hidden])").count() == 1 and sesion(pg)["medidas"]["temp"]["valor"] is None, "y sí salta: pasa a la siguiente medición (el peso, criterio 41) sin guardar lo que siga llegando")
+            revisa(pg.locator("[data-medicion=peso]:not([hidden])").count() == 1 and sesion(pg)["medidas"]["temp"]["valor"] is None, "y sí salta: pasa a la siguiente medición (el peso) sin guardar lo que siga llegando")
             pg.evaluate("() => window.MediBot.terminar()")
             pg.close()
 
@@ -496,7 +495,7 @@ def main() -> None:
                 revisa(ok, f"{nombre}: {len(r['recorridos'])} consulta(s) hasta su hoja, {r['impresiones']} impresión(es), solo con botones ({' → '.join(r['recorridos'][0])})")
                 voces.extend(r["dicho"])
             print("        Pedro, palabras por pantalla: " + ", ".join(f"{k} {v}" for k, v in pedro["por"].items()))
-            # A8: se reporta la cifra antes y después; si no se llega, se dice. Es un reporte, no una compuerta.
+            # Voz corta: se reporta la cifra antes y después; si no se llega, se dice. Es un reporte, no una compuerta.
             print(f"  {'META ALCANZADA' if pedro['palabras'] <= 1300 else 'META NO ALCANZADA'}: Pedro {pedro['palabras']} palabras de voz (meta ≤ 1,300; la v0.4 con el mismo recorrido: 2,798)")
             nav.close()
     finally:

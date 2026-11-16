@@ -8,6 +8,7 @@ window.MediBotData.corpus = {
     {
       "id": "embarazo",
       "nombre": "Embarazo y dar pecho",
+      "nombre_menor12": "Embarazo",
       "icono": "i-person",
       "dibujo": "🤰",
       "clase": "situacion",
@@ -37,7 +38,7 @@ window.MediBotData.corpus = {
             "url": "https://www.gob.mx/911"
           }
         ],
-        "edad_minima": 12
+        "edad_minima": 9
       }
     },
     {
@@ -1340,6 +1341,7 @@ window.MediBotData.corpus = {
     },
     {
       "id": "acido_folico",
+      "por_perfil": {"tercera": {"nombre": "Ácido fólico de su control prenatal", "como": "Que lo tome como se lo indiquen en su control prenatal; casi siempre es 1 tableta al día y es gratis en su centro de salud.", "si_no_hay": "Si no se lo han dado, que lo pida en su centro de salud. Mientras, que coma frijol, quelites y naranja."}},
       "tipo": "suplemento",
       "nombre": "Ácido fólico de tu control prenatal",
       "temas": [
@@ -1384,6 +1386,7 @@ window.MediBotData.corpus = {
     },
     {
       "id": "hierro",
+      "por_perfil": {"tercera": {"nombre": "Hierro de su control prenatal", "como": "Que lo tome como se lo indiquen en su control prenatal, con agua o agua de naranja, no junto con leche ni con pastillas de calcio.", "si_no_hay": "Si no se lo han dado, que lo pida en su control prenatal. Mientras, que coma frijol con limón, amaranto y huevo."}},
       "tipo": "suplemento",
       "nombre": "Hierro de tu control prenatal",
       "temas": [
@@ -2596,6 +2599,7 @@ window.MediBotData.corpus = {
     },
     {
       "id": "caminar",
+      "por_perfil": {"adolescente": {"como": "De 5 a 17 años: una hora al día de moverte a un paso que te haga respirar más rápido: jugar, correr, andar en bici, nadar o ayudar en el campo. 3 días a la semana, algo que fortalezca: saltar, trepar o cargar. Los ratitos también suman."}},
       "tipo": "habito",
       "nombre": "Caminar o moverte",
       "temas": [
@@ -5369,6 +5373,7 @@ window.MediBotData.corpus = {
     },
     {
       "id": "seguir_comiendo",
+      "por_perfil": {"menor_embarazo": {"nombre": "Seguir comiendo con diarrea", "para": "Con diarrea el cuerpo pierde agua y fuerza. Seguir comiendo ayuda a recuperarse.", "como": "No dejes de comer. Come poco y seguido comida blanda, como arroz, plátano, papa o huevo cocido. Además, toma suero oral o agua segura después de cada vez que vayas al baño suelto.", "si_no_hay": "Siempre se puede: seguir con la comida de siempre."}},
       "tipo": "habito",
       "nombre": "Seguir comiendo y dando pecho con diarrea",
       "temas": [
@@ -5833,7 +5838,7 @@ window.MediBotData.corpus = {
       "temas": [
         "embarazo"
       ],
-      "para": "Algunas comidas crudas o sin hervir pueden traer microbios que dañan al bebé. Cocinar bien y escoger bien te cuida a ti y a tu bebé.",
+      "para": "Algunas comidas crudas o sin hervir pueden traer microbios que dañan el embarazo. Cocinar bien y escoger bien te cuida a ti y a tu embarazo.",
       "como": "Come la carne, el pollo, el pescado y los mariscos bien cocidos, sin partes rosadas ni sangre. El huevo, bien cocido. Toma leche pasteurizada y nunca leche bronca. El queso que no diga «pasteurizado», cómelo solo bien cocinado, hasta que eche vapor. No comas hígado. Pescados como la sardina, no más de 2 veces por semana. Café: no más de 2 tazas al día. Té de manzanilla: no más de 4 tazas al día. Nada de alcohol.",
       "ayuda": 2,
       "evidencia": "Lo recomienda el NHS (Reino Unido); lo del alcohol, la OMS.",
@@ -5841,7 +5846,7 @@ window.MediBotData.corpus = {
       "excluir": {
         "embarazo": false,
         "lactancia": false,
-        "edad_minima": 12,
+        "edad_minima": 9,
         "medicinas": [],
         "condiciones": []
       },
@@ -6072,7 +6077,7 @@ window.MediBotData.corpus = {
     {
       "id": "comer_a_sus_horas",
       "tipo": "habito",
-      "nombre": "Comer a sus horas",
+      "nombre": "Comer a tus horas",
       "temas": [
         "dolor_cabeza",
         "azucar_peso"
@@ -6114,6 +6119,7 @@ window.MediBotData.corpus = {
     },
     {
       "id": "menos_alcohol",
+      "por_perfil": {"hombre": {"para": "El alcohol puede dar dolor de cabeza, quitar el buen sueño, empeorar el ánimo y dañar el corazón y el hígado."}, "embarazo": {"nombre": "No tomar nada de alcohol", "para": "En el embarazo ninguna cantidad de alcohol es segura: puede dañar el embarazo desde el principio.", "como": "No tomes nada de alcohol. Si te cuesta dejarlo, pide ayuda en tu centro de salud o llama gratis a la Línea de la Vida: 800 911 2000."}},
       "tipo": "habito",
       "nombre": "Tomar menos alcohol, o nada",
       "temas": [

@@ -1,5 +1,5 @@
-// Rediseño v0.5 (docs/diseno/sistema.md): «Cuidado con esto» con hasta 2 tarjetas por sección (criterio 26),
-// pictogramas en lugar de emoji (criterio 23) y textos de la bienvenida («es gratis», criterio 25; voz corta).
+// Rediseño v0.5 (docs/diseno/sistema.md): «Cuidado con esto» con hasta 2 tarjetas por sección,
+// pictogramas en lugar de emoji y textos de la bienvenida («es gratis»; voz corta).
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
@@ -18,7 +18,7 @@ const PERFILES = {
 };
 const perfilDe = (pc) => M.perfil(sesionBase(ctx, { medicinas: ["ninguna"], ...pc }), null);
 
-describe("Cuidado con esto: hasta 2 por sección (decisión de diseño, criterio 26)", () => {
+describe("Cuidado con esto: hasta 2 por sección (decisión de diseño)", () => {
   test("R1: ≤ 2 por sección, la primera = cuidado(), sin repetir en la consulta, perfil y sección respetados", () => {
     const fallas = [];
     for (const [n, pc] of Object.entries(PERFILES)) {
@@ -73,7 +73,7 @@ describe("Cuidado con esto: hasta 2 por sección (decisión de diseño, criterio
 
 describe("Pictogramas y textos del rediseño", () => {
   const EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/u;
-  test("P1: sin emoji en js/ ni en data/textos.js (criterio 23); el único permitido es el filtro de la voz", () => {
+  test("P1: sin emoji en js/ ni en data/textos.js; el único permitido es el filtro de la voz", () => {
     const archivos = [...readdirSync(join(RAIZ, "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f), "data/textos.js"];
     const hallados = [];
     for (const rel of archivos) readFileSync(join(RAIZ, rel), "utf8").split(/\r?\n/).forEach((l, i) => {

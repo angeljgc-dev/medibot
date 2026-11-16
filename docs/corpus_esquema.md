@@ -85,6 +85,6 @@ Una sección se oculta si tiene menos de 3 opciones aptas para el perfil.
 |---|---|---|
 | `sin_cambio` | raíz de la entrada, `true` | La entrada no tiene sustituto (vacunas, control prenatal, dar pecho, ir al centro de salud…). «No lo encuentro» no ofrece alternativas: dice «Esta no tiene cambio» y lee `si_no_hay`. Su lista `alternativas` queda vacía. |
 | `avisos_perfil` | raíz, `{ rasgo: texto }` | Avisos que solo le tocan a una persona con ese rasgo (`embarazo`, `lactancia`, `nino`, `mayor60`). El campo `aviso` queda solo para lo que vale para todos. Igual que `avisos_medicina`, pero por perfil. |
-| `actividad` | raíz, `true` | Marca la actividad física (OMS 2020/2019). En las secciones donde hay alguna apta, la selección incluye al menos una (criterio 11). |
+| `actividad` | raíz, `true` | Marca la actividad física (OMS 2020/2019). En las secciones donde hay alguna apta, la selección incluye al menos una. |
 
 Regla de contenido para `alternativas`: cada alternativa debe servir **para lo mismo** que la tarjeta (si no hay guayaba, otra fruta con vitamina C; si no hay calor en la panza, un baño tibio). Si nada la sustituye, `sin_cambio: true`. Las alternativas respetan `tipos_permitidos` de las secciones de la tarjeta.

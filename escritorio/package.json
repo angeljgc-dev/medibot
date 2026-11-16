@@ -1,7 +1,7 @@
 {
   "name": "medibot",
   "productName": "MediBot",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "description": "MediBot: quiosco de orientación en salud (no diagnostica). Aplicación de escritorio.",
   "main": "main.js",
   "author": "Grupo 301 TSU Automatización",

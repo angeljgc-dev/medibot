@@ -1,4 +1,4 @@
-"""Pruebas en el navegador de la ronda 4 (criterio 76): «Cerrar MediBot» en el reposo, solo en la
+"""Pruebas en el navegador de la ronda 4: «Cerrar MediBot» en el reposo, solo en la
 app de escritorio. Se simula window.medibotEscritorio con un stub que cuenta las llamadas a salir().
 Revisa lo que la persona ve y oye: el botón y su texto, la barra que se llena, el aviso del toque corto, el diálogo, que
 el verde, Enter y los botones físicos nunca cierran la app, y que el reposo no se mueve ni se tapa.
@@ -56,7 +56,7 @@ def main() -> None:
                 pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
                 pg.on("pageerror", lambda e: errores.append(str(e)))
                 pg.goto(url); pg.wait_for_function("() => window.MediBot")
-                # terminar() regresa a letra normal (criterio 49): la escala se pone DESPUÉS y se recoloca el botón como al cambiar la ventana
+                # terminar() regresa a letra normal: la escala se pone DESPUÉS y se recoloca el botón como al cambiar la ventana
                 pg.evaluate("(e) => { window.MediBot.terminar(); document.documentElement.dataset.scale = e; window.dispatchEvent(new Event('resize')); }", escala); pg.wait_for_timeout(120)
                 return pg
             pantalla = lambda pg: pg.evaluate("() => window.MediBot.pantalla")
@@ -155,7 +155,7 @@ def main() -> None:
             revisa(abierto(pg) and salir(pg) == 0, f"dedo quieto 3 s: sale el diálogo y la app sigue ({abierto(pg)})")
             pg.close()
 
-            print("76 d · la letra grande nunca llega al reposo (criterio 49): por eso el reposo se mide con letra normal")
+            print("76 d · la letra grande nunca llega al reposo: por eso el reposo se mide con letra normal")
             pg = pagina()
             vias = {}
             for via in ["terminar", "borrar", "panel"]:

@@ -4,7 +4,8 @@
    - Pantalla completa tipo quiosco, sin menú, sin navegación externa, pantalla siempre encendida; se recupera si el contenido se cae.
    - Salida para el operador: Ctrl+Alt+Shift+Q (atajo global y respaldo dentro de la ventana).
    - Impresión silenciosa en la impresora predeterminada (IPC "medibot:imprimir"), sin diálogo del sistema.
-   - Ventana normal para desarrollo: MEDIBOT_VENTANA=1. Autoprueba: MEDIBOT_PRUEBA=1. Sin aceleración de GPU: MEDIBOT_SIN_GPU=1 */
+   - Ventana normal para desarrollo: MEDIBOT_VENTANA=1. Autoprueba: MEDIBOT_PRUEBA=1. Sin aceleración de GPU: MEDIBOT_SIN_GPU=1.
+   - Sin ventana visible (pruebas automáticas que no deben aparecer en la pantalla de quien trabaja): MEDIBOT_OCULTA=1 */
 "use strict";
 const { app, BrowserWindow, session, Menu, globalShortcut, shell, powerSaveBlocker, ipcMain } = require("electron");
 const path = require("path");
@@ -71,7 +72,7 @@ function crearVentana() {
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: false }
   });
   Menu.setApplicationMenu(null);
-  win.once("ready-to-show", () => win.show());
+  win.once("ready-to-show", () => { if (process.env.MEDIBOT_OCULTA !== "1") win.show(); });
   win.loadFile(INDEX);
 
   // Respaldo del atajo de salida dentro de la ventana (no depende del registro global)

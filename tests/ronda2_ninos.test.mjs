@@ -1,8 +1,8 @@
-// Ronda de correcciones, criterio 40: contenido para niños.
+// Ronda de correcciones: contenido para niños.
 // En pruebas, la consulta de Juana para su hijo de 2 a 5 años mostraba «Si roncas fuerte…», «Si tienes los
 // riñones mal…», la Línea de la Vida en Sueño, tarjetas de ashwagandha y toloache, y la sección «Presión y corazón».
 // Corte de edad: «menor» = la persona tiene menos de 12 años (grupos «bebe» y «nino»), el mismo corte que ya usa el motor
-// (dosis para niños, rasgo «nino» de «Cuidado con esto»). De 12 a 17 sí se muestran (criterio 40).
+// (dosis para niños, rasgo «nino» de «Cuidado con esto»). De 12 a 17 sí se muestran.
 // Campos nuevos: `cuando_ir.edad_minima` (franja entera de adulto), `cuando_ir.texto_no_ninos` (frases exactas del texto
 // que no van a menores), `edad_minima` en tarjetas de cuidado y `aviso_no_ninos` (frases exactas del `aviso` que no se
 // muestran a menores de 12). requiereLeyenda(entrada).
@@ -25,7 +25,7 @@ const rec = (s, temas) => M.recomendar(s, R.evaluar(s), temas);
 const per = (s) => M.perfil(s, R.evaluar(s));
 const NINOS = ["menos2", "2a5", "6a11"];
 const TODOS_TEMAS = C.temas.map(t => t.id);
-// Textos que solo aplican a adultos y adolescentes (lista del criterio 40)
+// Textos que solo aplican a adultos y adolescentes (lista de la ronda de correcciones)
 const ADULTO_AVISO = /riñ[oó]n|roncas|hacerte daño|no estar vivo|L[ií]nea de la Vida|tomes poca agua|presi[oó]n alta|tu pastilla/i;
 const ADULTO = new RegExp(ADULTO_AVISO.source + "|si estás embarazada|te ca[ií]ste|la regla|el pecho que puede pasar al brazo|herida en el pie", "i"); // franjas
 const porId = (id) => C.entradas.find(e => e.id === id);

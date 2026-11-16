@@ -8,7 +8,7 @@ import { cargar, sesionBase, valida, HAY_CORPUS_REAL } from "./cargar.mjs";
 const CORPUS = ["fixture", ...(HAY_CORPUS_REAL ? ["real"] : [])];
 const medidas = (fc, spo2, temp = null) => ({ fc: valida(fc), spo2: valida(spo2), temp: temp == null ? { valor: null, estado: null } : valida(temp) });
 
-/** Perfiles de la prueba B1. `edad` y `meds` son lo que la prueba espera que el motor entienda.
+/** Perfiles de la prueba de seguridad de todo el corpus. `edad` y `meds` son lo que la prueba espera que el motor entienda.
     De 12 a 59 años, quien contesta "No" al embarazo lo dice explícito; "Prefiero no decir" (o no contestar) se trata
     como posible embarazo para excluir (igual que "No sé" en medicinas). */
 const PERFILES = {
@@ -82,7 +82,7 @@ for (const cual of CORPUS) {
       assert.equal(M.perfil(sinFiebre, R.evaluar(sinFiebre)).senales.fiebre, false);
     });
 
-    test("B1: ninguna tarjeta ni alternativa insegura para ningún perfil (todo el corpus)", () => {
+    test("ninguna tarjeta ni alternativa insegura para ningún perfil (todo el corpus)", () => {
       const fallas = [];
       for (const [k, p] of Object.entries(PERFILES)) {
         for (const caso of [enVerde(k), enAmbar(k)]) {
@@ -106,19 +106,19 @@ for (const cual of CORPUS) {
       assert.deepEqual(fallas, []);
     });
 
-    test("B1: a una embarazada nunca le salen plantas con leyenda de embarazo", () => {
+    test("a una embarazada nunca le salen plantas con leyenda de embarazo", () => {
       const { s, r } = enVerde("embarazada");
       const ids = M.recomendar(s, r, temas).tarjetas.map(t => t.entrada);
       assert.ok(!ids.some(e => e.leyenda_embarazo || (e.excluir && e.excluir.embarazo)));
     });
 
-    test("B2: dos perfiles con el mismo tema reciben listas distintas", () => {
+    test("dos perfiles con el mismo tema reciben listas distintas", () => {
       const lista = (k, tema) => { const { s, r } = enVerde(k); return M.recomendar(s, r, [tema]).tarjetas.map(t => t.entrada.id).join(","); };
       if (temas.includes("sueno")) assert.notEqual(lista("adulto_sano", "sueno"), lista("embarazada", "sueno"));
       if (temas.includes("defensas")) assert.notEqual(lista("adulto_sano", "defensas"), lista("nino_6", "defensas"));
     });
 
-    test("B3: nivel rojo bloquea: sin plantas ni suplementos", () => {
+    test("nivel rojo bloquea: sin plantas ni suplementos", () => {
       const s = sesion("adulto_sano", { medidas: medidas(72, 97) }); s.alarma.pecho = true;
       const r = R.evaluar(s);
       assert.equal(r.nivel, "rojo");
@@ -128,10 +128,10 @@ for (const cual of CORPUS) {
       assert.match(rec.encabezado, /\S/);
     });
 
-    // B4 — especificación cambiada el 2026-11-02 (decisión de diseño, campo nuevo `sin_cambio`, docs/corpus_esquema.md):
+    // Especificación cambiada el 2026-11-02 (decisión de diseño, campo nuevo `sin_cambio`, docs/corpus_esquema.md):
     // una entrada con sin_cambio: true da 0 alternativas y «No lo encuentro» dice «Esta no tiene cambio» + su si_no_hay;
     // toda entrada SIN sin_cambio sigue exigiendo ≥ 2 alternativas seguras para el adulto sano (el mínimo no baja).
-    test("B4: sin_cambio → 0 alternativas y «Esta no tiene cambio» + si_no_hay; las demás, ≥ 2 alternativas seguras (adulto sano) y ≥ 1 en perfiles restringidos (o mensaje)", () => {
+    test("sin_cambio → 0 alternativas y «Esta no tiene cambio» + si_no_hay; las demás, ≥ 2 alternativas seguras (adulto sano) y ≥ 1 en perfiles restringidos (o mensaje)", () => {
       const fallas = [];
       const sano = M.perfil(enVerde("adulto_sano").s, enVerde("adulto_sano").r);
       for (const e of corpus.entradas) {
@@ -159,7 +159,7 @@ for (const cual of CORPUS) {
       assert.deepEqual(fallas, []);
     });
 
-    test("B5: con fiebre la primera tarjeta es hidratación o suero oral (adulto, embarazada y niño)", () => {
+    test("con fiebre la primera tarjeta es hidratación o suero oral (adulto, embarazada y niño)", () => {
       for (const k of ["adulto_sano", "embarazada", "nino_6"]) {
         const s = sesion(k, { medidas: medidas(88, 97, 38.0), categorias: ["defensas"] });
         const rec = M.recomendar(s, R.evaluar(s), ["defensas"]);
@@ -222,7 +222,7 @@ for (const cual of CORPUS) {
     test("ámbar: los suplementos llevan 'pregúntalo en tu centro de salud'", () => {
       const { s, r } = enAmbar("adulto_sano");
       assert.equal(r.nivel, "ambar");
-      // criterio 64: la rehidratación (suero oral) no lleva nada que la retrase
+      // La rehidratación (suero oral) no lleva nada que la retrase
       const sups = M.recomendar(s, r, temas).tarjetas.filter(t => t.entrada.tipo === "suplemento" && !t.entrada.rehidratacion);
       for (const t of sups) assert.ok(t.avisos.some(a => /pregúntalo en tu centro de salud/i.test(a)), t.entrada.id);
     });

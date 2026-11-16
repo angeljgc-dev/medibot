@@ -96,3 +96,27 @@ mano nunca lo pisa la báscula, y con un niño o niña la báscula no pesa sola 
 | 18 años o más | 30 a 250 |
 
 Los rangos son amplios a propósito (criterio de MediBot, sin fuente clínica): solo atrapan a otra persona sobre la báscula.
+
+## Pendiente de firma de personal de salud: embarazo en niñas y adolescentes (v0.6, 2026-11-15)
+
+**No está aplicado.** El semáforo (`js/reglas.js`, `data/rangos.js` y `data/alarma.js`, archivos protegidos) no cambia sin la
+firma de personal de salud. Lo que sí se aplicó: el mensaje protector en el resultado, la voz y la hoja,
+que va en cualquier nivel sin cambiarlo.
+
+Recomendación, revisada contra fuentes oficiales, para firmar o rechazar:
+
+- **9 a 14 años con embarazo «Sí»** (`nino` con `edadNino = 9a11`, o `12a17` con `edadAdol = 12a14` o sin contestar):
+  nivel **mínimo ámbar con prisa «hoy»**, sea cual sea el resultado de las mediciones, y que ningún número lo baje. **No rojo**:
+  el rojo sigue saliendo solo por las preguntas rojas que ya existen. Base: NOM-007-SSA2-2016, 5.2.1.9 y 5.2.1.15; Ruta NAME;
+  NOM-046, 6.4.1 y 6.4.2.7; OMS 2017 y 2024. Hoy el grupo `nino` sale siempre ámbar «datos incompletos» y la prisa «hoy»
+  solo la ponen las bandas de medición: hace falta una regla nueva en `js/reglas.js`.
+- **15 a 17 años con embarazo «Sí»**: no se recomienda cambiar el nivel sin una fuente que fije la prisa; propone
+  que quien firme decida si pone ámbar «esta semana» (base posible: NOM-007, 5.2.1.15, primera consulta de 6 a 8 semanas).
+
+Mientras no se firme, el nivel y el color siguen igual, pero desde la v0.6 la
+presentación ya no se contradice: con el mensaje protector, el resultado, la voz y la hoja dicen «Por el embarazo, ve hoy al
+centro de salud» («llévala» si consulta otra persona). De 15 a 17 siempre va el texto de 15 a 17 con la prisa del
+semáforo (decisión de diseño, 2026-11-15): «pronto, de preferencia esta semana» en verde o ámbar sin prisa; «hoy»
+(`textos.embarazo_menor["15a17_hoy"]`) si el semáforo ya pide ir hoy o es rojo; así no hay dos prisas distintas. Además se quitan «puedes cuidarte en casa»,
+«en los próximos días», «en los próximos 2 o 3 días», «en la siguiente revisión» y «al menos una vez al año»
+(`js/pantallas.js`: `accionMenor`, `textoNivel`, `accionesPara`, `mensajeMenor`). En rojo, el 911 va primero y la acción no cambia; solo el mensaje de 15 a 17 dice «hoy».

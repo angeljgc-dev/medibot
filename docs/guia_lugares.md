@@ -1,4 +1,4 @@
-# Guía de llenado de «¿A dónde voy?» (criterio 17)
+# Guía de llenado de «¿A dónde voy?»
 
 Para la persona que instala el quiosco en una comunidad.
 

@@ -10,6 +10,9 @@ window.MediBotData.pictos = {
   "p-nino": "Niño o niña",
   "p-bebe": "Bebé",
   "p-otra-persona": "Otra persona",
+  "p-mujer": "Mujer",
+  "p-hombre": "Hombre",
+  "p-no-decir": "Prefiero no decir",
   "p-medir-oximetro": "Dedo en el oxímetro",
   "p-medir-termometro": "Termómetro en la axila",
   "p-medir-bascula": "Subirse a la báscula",
@@ -149,7 +152,13 @@ window.MediBotData.pictos = {
  "embarazo": {
   "si": "p-embarazada",
   "lactancia": "p-lactancia",
-  "no": "p-no"
+  "no": "p-no",
+  "no_decir": "p-no-decir"
+ },
+ "sexo": {
+  "mujer": "p-mujer",
+  "hombre": "p-hombre",
+  "no_decir": "p-no-decir"
  },
  "alarma": {
   "pecho": "p-grupo-pecho",

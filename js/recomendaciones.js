@@ -28,11 +28,11 @@
       grupo y `edad_maxima` con el superior (edadMax); `sin_cambio` → «No lo encuentro» no ofrece alternativas;
       las alternativas respetan `tipos_permitidos` de la sección de la tarjeta; `avisos_perfil` (y `avisos_condicion`
       en la tarjeta de hidratación) solo para quien tiene ese rasgo; `actividad: true` → al menos una por sección si
-      hay alguna apta (criterio 11); la hoja impresa lleva la mejor idea de cada sección elegida (paraHoja).
-  11. Fase 3 (criterio 16) y v0.5 (criterio 26): recomendar() también devuelve `cuidados: { tema: [tarjeta, …] }`
+      hay alguna apta; la hoja impresa lleva la mejor idea de cada sección elegida (paraHoja).
+  11. Fase 3 y v0.5: recomendar() también devuelve `cuidados: { tema: [tarjeta, …] }`
       (data/cuidado.js): hasta 2 por sección, las más graves que le tocan al perfil, sin repetir entre secciones, nada en
       rojo; y `cuidado: { tema: la primera | null }`. Ver cuidadoSecciones().
-  12. Criterio 40 (contenido para niños, 2026-11-02). Corte: «menor» = menos de 12 años (EDAD_MENOR; grupos «bebe» y
+  12. Contenido para niños (2026-11-02). Corte: «menor» = menos de 12 años (EDAD_MENOR; grupos «bebe» y
       «nino»), el mismo que ya usan las dosis para niños y el rasgo «nino» de «Cuidado con esto». A un menor no le salen:
       la franja `cuando_ir` con `edad_minima` mayor que su edad ni las frases de su `texto_no_ninos`; las tarjetas de cuidado con `edad_minima` mayor que su
       edad; ni las frases de `aviso_no_ninos` (frases exactas de su `aviso`, que se quitan del aviso; el texto curado no
@@ -51,21 +51,30 @@
 
   const ORDEN_TIPO = { alimento: 0, habito: 1, planta: 2, suplemento: 3 };
   const EDAD_GRUPO = { bebe: 0, nino: 0.25, "12a17": 12, "18a59": 18, "60mas": 60 };   // límite inferior de cada grupo
-  const EDAD_NINO = { menos2: 0.25, "2a5": 2, "6a11": 6 };
+  // Ronda 6: «6 a 11» se partió en «6 a 8» y «9 a 11». «6a11» se queda como alias de sesiones y pruebas de antes.
+  const EDAD_NINO = { menos2: 0.25, "2a5": 2, "6a8": 6, "9a11": 9, "6a11": 6 };
   // Edad más alta posible de cada grupo (M1): «6 a 11» llega hasta los 11 años y meses. Con ella se compara edad_maxima,
   // para no mostrarle a un niño de 11 algo «para 3 a 6»; con el límite inferior se compara edad_minima. Las dos, seguras.
   const EDAD_MAX_GRUPO = { bebe: 0.24, nino: 11.99, "12a17": 17.99, "18a59": 59.99, "60mas": Infinity };
-  const EDAD_MAX_NINO = { menos2: 1.99, "2a5": 5.99, "6a11": 11.99 };
+  const EDAD_MAX_NINO = { menos2: 1.99, "2a5": 5.99, "6a8": 8.99, "9a11": 11.99, "6a11": 11.99 };
   // Mismo remedio con otro id cuando no hay nombre científico que los una (decisión de diseño, 2026-11-02)
   const MISMO_REMEDIO = [["manzanilla", "manzanilla_piel"], ["llanten", "llanten_piel"]];
   // Anclas de seguridad (decisión del 2026-11-02): la regla de actividad física nunca las saca
   const ANCLAS_SEGURIDAD = ["lavar_manos", "agua_segura", "vacunas_cartilla", "suero_oral"];
   // Suplementos que el embarazo no restringe (OMS y NHS: el suero oral sí se usa): sin el aviso automático del control.
-  // Desde la ronda 3 (criterio 64) se tratan como `rehidratacion: true` (ver avisosPara): sin ningún aviso que retrase.
+  // Desde la ronda 3 se tratan como `rehidratacion: true` (ver avisosPara): sin ningún aviso que retrase.
   const SIN_AVISO_EMBARAZO = ["suero_oral"];
-  const EDAD_MENOR = 12; // criterio 40: menos de 12 años = consulta por un niño o una niña (ver la regla 12 arriba)
+  const EDAD_MENOR = 12; // Menos de 12 años = consulta por un niño o una niña (ver la regla 12 arriba)
   const MAX_HOJA = 4;  // ideas en la hoja impresa: hidratación + 1 por sección (máx. 3) caben en 1 carta (tools/e2e_pantallas.py E3b)
-  const TEXTO_NINO = { menos2: "menos de 2 años", "2a5": "de 2 a 5 años", "6a11": "de 6 a 11 años" };
+  const TEXTO_NINO = { menos2: "menos de 2 años", "2a5": "de 2 a 5 años", "6a8": "de 6 a 8 años", "9a11": "de 9 a 11 años", "6a11": "de 6 a 11 años" };
+  // A una menor embarazada no se le muestra, dice ni imprime nada con estas palabras (marcan
+  // el caso, culpan o dan por hecho cómo sigue el embarazo), ni ideas que suponen el parto. Se aplica a las ideas y a «Cuidado
+  // con esto» sin tocar el corpus: con las ideas que quedan, «Embarazo y dar pecho» sigue teniendo de dónde escoger.
+  const PROHIBIDAS_MENOR = /violaci[oó]n|abuso|agresor|delito|denuncia|ministerio p[uú]blico|fiscal[ií]a|procuradur[ií]a|(?<!\p{L})DIF(?!\p{L})|polic[ií]a|qui[eé]n fue|qui[eé]n es el pap[aá]|felicidades|vas a ser mam[aá]|tu beb[eé]|cu[eé]ntale a tu|alto riesgo|aborto|interrumpir|no deseado|es secreto|nadie se va a enterar|menor de 15|debiste|irresponsable|muy peligroso|puedes morir/iu;
+  const SUPONE_PARTO = ["lactancia_6m"]; // «Dale pecho en la primera hora después de nacer…»
+  const noParaMenorEmbarazada = (x) => SUPONE_PARTO.includes(x.id) || PROHIBIDAS_MENOR.test(JSON.stringify(x));
+  // Secciones que no se le SUGIEREN a un sexo (no se esconden: quien la busque la encuentra)
+  const NO_SUGERIR_SEXO = { hombre: ["colicos"] };
   const MAX_POR_TIPO = { alimento: 2, habito: 2, planta: 1, suplemento: 1 }; // por tema: variedad sin listas largas
   const MAX_TARJETAS = { molestia: 4, situacion: 3 };                         // por sección, según su clase
   const PESO_TIPO = { alimento: 2, habito: 2, planta: 1, suplemento: 0 };
@@ -75,7 +84,7 @@
   // IMC «bajo» por grupo según las bandas de data/rangos.js (18a59: bajo peso < 18.5; 60mas: bajo para la edad < 22)
   const IMC_BAJO = { "18a59": 18.5, "60mas": 22 };
   const CLAVES_MEDICINA = ["presion", "azucar", "anticoagulante", "corazon", "tiroides", "nervios_sueno", "convulsiones", "anticonceptivo"];
-  // Respaldo sin corpus: dibujo = id de pictograma del sprite (assets/pictos), nunca emoji (criterio 23)
+  // Respaldo sin corpus: dibujo = id de pictograma del sprite (assets/pictos), nunca emoji
   const DIBUJO_RESPALDO = { defensas: "p-defensas", digestion: "p-digestion", sueno: "p-sueno", energia: "p-energia", piel: "p-piel", huesos: "p-huesos", corazon: "p-corazon", vista: "p-vista" };
 
   const datos = () => window.MediBotData || {};
@@ -101,7 +110,8 @@
   function temas() { return corpus().temas; }
   function grupos() { return corpus().grupos || []; }
   function temaDe(id) { return temas().find(t => t.id === id) || null; }
-  function nombreTema(id) { const t = temas().find(x => x.id === id); return t ? t.nombre : id; }
+  /** Nombre de la sección; con el perfil, «Embarazo» (sin «y dar pecho») para menores de 12. */
+  function nombreTema(id, p) { const t = temas().find(x => x.id === id); return !t ? id : (p && p.edad < 12 && t.nombre_menor12) || t.nombre; }
   function usaRespaldo() { return corpus() === respaldo; }
 
   /** Convierte data/fichas.js al formato del corpus, con exclusiones conservadoras (solo mientras no exista data/corpus.js). */
@@ -138,17 +148,24 @@
     const elegidas = Array.isArray(s.medicinas) ? s.medicinas.filter(Boolean) : [];
     const desconocidas = elegidas.length === 0 || elegidas.includes("no_se");
     const medicinas = desconocidas ? [] : elegidas.filter(m => m !== "ninguna");
-    const fertil = grupo === "12a17" || grupo === "18a59";
+    // Ronda 6 (80–83): con «Hombre» no hay embarazo ni lactancia; el embarazo se pregunta desde «9 a 11» (niña), la lactancia
+    // desde los 12. Sin contestar el sexo (las sesiones de antes no lo traen), todo sigue como antes.
+    const sexo = ["mujer", "hombre", "no_decir"].includes(s.sexo) ? s.sexo : null;
+    const hombre = sexo === "hombre";
+    const nina9 = grupo === "nino" && s.edadNino === "9a11";
+    const fertil = !hombre && (grupo === "12a17" || grupo === "18a59" || nina9);
     const embarazo = s.embarazo === true && fertil; // un "sí" que quedó de otra edad o persona no cuenta
-    const lactancia = s.lactancia === true || (fertil && s.embarazoOpcion === "lactancia");
+    const lactancia = !hombre && !nina9 && (s.lactancia === true || (fertil && s.embarazoOpcion === "lactancia"));
     const temp = medida(s, "temp"), spo2 = medida(s, "spo2"), fc = medida(s, "fc");
     const imc = imcDe(s);
     return {
       persona: s.paraQuien || "yo",
-      grupo, edad, edadMax, edadNino: grupo === "nino" ? (s.edadNino || null) : null,
+      grupo, edad, edadMax, edadNino: grupo === "nino" ? (s.edadNino || null) : null, sexo,
+      edadAdol: grupo === "12a17" && ["12a14", "15a17"].includes(s.edadAdol) ? s.edadAdol : null,
       embarazo,
-      // "Prefiero no decir" o sin contestar (12 a 59 años): se excluye lo del embarazo, como "No sé" en medicinas
-      embarazoPosible: !embarazo && fertil && !["no", "no_aplica", "lactancia"].includes(s.embarazoOpcion),
+      // "Prefiero no decir" o sin contestar (12 a 59 años): se excluye lo del embarazo, como "No sé" en medicinas. En una
+      // niña de 9 a 11, solo si contestó «Prefiero no decir»: sin contestar no se le trata como posible embarazo.
+      embarazoPosible: !embarazo && fertil && (nina9 ? s.embarazoOpcion === "no_decir" : !["no", "no_aplica", "lactancia"].includes(s.embarazoOpcion)),
       lactancia,
       medicinas, medicinasDesconocidas: desconocidas,
       condiciones: Array.isArray(s.condiciones) ? s.condiciones : [],
@@ -205,6 +222,7 @@
   /** esSegura + lo que no toca por edad o etapa aunque la fuente no lo prohíba. */
   function apta(e, p) {
     if (!esSegura(e, p)) return false;
+    if (proteccionMenor(p) && noParaMenorEmbarazada(e)) return false; // 85a
     const ex = e.excluir || {};
     // exclusiva («hasta antes de») y contra la edad más alta del grupo (M1); sin edadMax (perfil viejo), la inferior
     if (typeof ex.edad_maxima === "number" && (p.edadMax ?? p.edad) >= ex.edad_maxima) return false;
@@ -214,13 +232,13 @@
 
   /* ---------- Avisos ---------- */
   const esMenor = (p) => !!p && p.edad < EDAD_MENOR;
-  /** `texto` sin las frases exactas de la lista (criterio 40); null si no queda nada. */
+  /** `texto` sin las frases exactas de la lista; null si no queda nada. */
   function sinFrases(texto, frases) {
     let t = String(texto || "");
     for (const frase of Array.isArray(frases) ? frases : []) if (frase) t = t.split(frase).join(" ");
     return t.replace(/\s+/g, " ").trim() || null;
   }
-  /** Aviso general de la entrada para un menor de 12: su `aviso` sin las frases de `aviso_no_ninos` (criterio 40). */
+  /** Aviso general de la entrada para un menor de 12: su `aviso` sin las frases de `aviso_no_ninos`. */
   function avisoNinos(e) { return sinFrases(e && e.aviso, e && e.aviso_no_ninos); }
   /** Aviso general que ve ESTA persona: el `aviso` completo, o a un menor de 12, sin las frases de adulto. */
   function avisoGeneral(e, p) { return esMenor(p) && Array.isArray(e && e.aviso_no_ninos) ? avisoNinos(e) : (e && e.aviso) || null; }
@@ -231,7 +249,7 @@
     const T = TX(); const out = [];
     const poner = (t) => { if (t && !out.includes(t)) out.push(t); };
     if (!e || !p) return out;
-    poner(avisoGeneral(e, p)); // a un menor de 12, sin las frases de adulto (criterio 40)
+    poner(avisoGeneral(e, p)); // a un menor de 12, sin las frases de adulto
     // Avisos por medicina: primero los de la propia entrada (campo opcional `avisos_medicina`); la tabla de textos.js
     // solo cubre las medicinas que la entrada no trae, para no repetir el mismo aviso con otras palabras.
     const propios = e.avisos_medicina && typeof e.avisos_medicina === "object" ? e.avisos_medicina : {};
@@ -246,7 +264,7 @@
     const r = rasgos(p);
     for (const [rasgo, t] of Object.entries(objeto(e.avisos_perfil))) if (r.has(rasgo)) poner(t);
     for (const [cond, t] of Object.entries(objeto(e.avisos_condicion))) if (p.condiciones.includes(cond)) poner(t);
-    // Rehidratación (criterio 64, `rehidratacion: true`: el suero oral): nada que la retrase. Sin «pregunta antes de
+    // Rehidratación (`rehidratacion: true`: el suero oral): nada que la retrase. Sin «pregunta antes de
     // tomarlo» por «No sé», embarazo ni ámbar; las señales para ir hoy ya van en su `aviso` (curado, con fuente).
     const rehidrata = e.rehidratacion === true || SIN_AVISO_EMBARAZO.includes(e.id);
     if (rehidrata) return out;
@@ -279,7 +297,7 @@
       .sort((x, y) => y[1] - x[1] || (x[0].costo || 1) - (y[0].costo || 1) || (x[0].id < y[0].id ? -1 : x[0].id > y[0].id ? 1 : 0))
       .map(x => x[0]);
     // T12-b: a igual evidencia para este tema, la primera es comida o hábito, no planta ni suplemento.
-    // El puntaje lo daba por los pesos; con `donde: "centro_salud"` (criterio 40: ácido fólico) un suplemento empataba.
+    // El puntaje lo daba por los pesos; con `donde: "centro_salud"` (ácido fólico) un suplemento empataba.
     if (orden.length && esRiesgo(orden[0])) {
       const k = orden.findIndex(e => (e.tipo === "alimento" || e.tipo === "habito") && ayudaEn(e, tema) === ayudaEn(orden[0], tema));
       if (k > 0) orden.unshift(orden.splice(k, 1)[0]);
@@ -302,10 +320,29 @@
   }
   function seccionesVisibles(p) { return temas().filter(t => visible(t, p)); }
   /** Situaciones que se sugieren solas (máx. 2, por prioridad) según el perfil; solo las visibles. */
+  /** ¿Esta sección NO se le sugiere a este perfil? (Cólicos de la regla a «Hombre»). No la esconde. */
+  function noSugerir(temaId, p) { return !!p && !!p.sexo && (NO_SUGERIR_SEXO[p.sexo] || []).includes(temaId); }
+  /** ¿Es un embarazo en una menor de 15 (9 a 14 años)? «si» o «no». En 12 a 17, sin contestar «12 a 14 /
+      15 a 17» también «si»: el lado seguro. El semáforo no cambia (archivos protegidos). */
+  function embarazoMenor15(p) {
+    if (!p || !p.embarazo) return "no";
+    if (p.grupo === "nino" && p.edadMax < 15) return "si";
+    return p.grupo === "12a17" && p.edadAdol !== "15a17" ? "si" : "no";
+  }
+  /** Qué mensaje protector toca: «menor15» (9 a 14), «15a17» o null (no hay embarazo o es adulta). */
+  /** 85a: el filtro de palabras y de lo que supone el parto va con embarazo «Sí» (9 a 17) y también con «Prefiero no decir»
+      (embarazo posible) en una niña o adolescente: el 83 trata las dos respuestas igual. */
+  function proteccionMenor(p) {
+    return !!embarazoAdolescente(p) || (!!p && p.embarazoPosible && (p.grupo === "nino" || p.grupo === "12a17"));
+  }
+  function embarazoAdolescente(p) {
+    if (embarazoMenor15(p) === "si") return "menor15";
+    return p && p.embarazo && p.grupo === "12a17" && p.edadAdol === "15a17" ? "15a17" : null;
+  }
   function sugeridas(p) {
     if (!p) return [];
     const r = rasgos(p);
-    return temas().filter(t => Array.isArray(t.sugerir_si) && t.sugerir_si.some(k => r.has(k)) && visible(t, p))
+    return temas().filter(t => Array.isArray(t.sugerir_si) && t.sugerir_si.some(k => r.has(k)) && visible(t, p) && !noSugerir(t.id, p))
       .sort((a, b) => (a.prioridad ?? 99) - (b.prioridad ?? 99)).slice(0, MAX_SUGERIDAS).map(t => t.id);
   }
 
@@ -350,6 +387,36 @@
       const comida = candidatas.find(comidaOHabito);
       if (comida) out[out.length - 1] = comida;
     }
+    return out.map(o => adaptar(o, p));
+  }
+  /* ---------- Lo que se muestra de una idea, según la persona (ronda 6, lote de cierre) ----------
+     adaptar(e, p) → copia de la entrada con:
+       - las variantes `por_perfil` que le tocan, en este orden: adolescente (12 a 17; 101), embarazo (100), hombre (102),
+         menor_embarazo (protección del 85a), tercera (consulta otra persona o un niño; 98), tercera_nina (por una niña);
+       - a una menor embarazada (o «Prefiero no decir»), sin las frases que dan por hecho el parto o la lactancia (99);
+       - solo las fuentes que corresponden a la persona (105).
+     La entrada original no cambia; los avisos se siguen calculando con ella. */
+  const FRASES_PARTO = /embarazarte|para el beb[eé]|despu[eé]s del parto|ces[aá]rea|lactancia|(?<!\p{L})(dar|dando|das|da|darle|dándole) (el )?pecho/iu;
+  const quitarFrasesParto = (x) => typeof x !== "string" ? x : x.split(/(?<=[.!?])\s+/).filter(f => !FRASES_PARTO.test(f)).join(" ");
+  function fuentesPara(lista, p) {
+    if (!Array.isArray(lista) || !p) return lista;
+    const hombre = p.sexo === "hombre", mayor = p.edad >= 60, menor = (p.edadMax ?? p.edad) < 20;
+    const fuera = (n) => (/period pain|regla|menstrua/i.test(n) && (hombre || mayor || p.edad < 9))
+      || (/older adults|adultos mayores|personas mayores|\bNIA\b/i.test(n) && !mayor)
+      || (/cartilla[^,]*de 20 a 59/i.test(n) && menor)
+      || (/pregnan|embarazo|prenatal/i.test(n) && (hombre || (p.edad < 9 && !p.embarazo)))
+      || (/lactancia|breastfeeding/i.test(n) && (hombre || p.edad < 12 || proteccionMenor(p)));
+    return lista.filter(f => !fuera(String((f && f.nombre) || "")));
+  }
+  function adaptar(e, p) {
+    if (!e || !p) return e;
+    const pp = e.por_perfil || {};
+    const toca = { adolescente: p.grupo === "12a17", embarazo: !!p.embarazo || !!p.embarazoPosible || proteccionMenor(p) /* 100: también «Prefiero no decir» */, hombre: p.sexo === "hombre",
+      menor_embarazo: proteccionMenor(p), tercera: p.persona && p.persona !== "yo", tercera_nina: p.persona === "nino" && p.sexo === "mujer" };
+    let out = Object.assign({}, e);
+    for (const k of ["adolescente", "embarazo", "hombre", "menor_embarazo", "tercera", "tercera_nina"]) if (toca[k] && pp[k]) out = Object.assign(out, pp[k]);
+    if (proteccionMenor(p)) for (const c of ["para", "como", "si_no_hay", "cuanto_ninos"]) if (out[c]) out[c] = quitarFrasesParto(out[c]);
+    if (out.fuentes) out.fuentes = fuentesPara(out.fuentes, p);
     return out;
   }
   /** «Cómo y cuánto» para esta persona: a menores de 12, el texto para niños si lo hay. */
@@ -383,7 +450,7 @@
     return info.intro + " " + (modo === "hoja" ? punto(info.alternativas.map(una).join(" o ")) : info.alternativas.map(una).join(" "));
   }
 
-  /* ---------- «Cuidado con esto» (criterio 16, data/cuidado.js) ----------
+  /* ---------- «Cuidado con esto» (data/cuidado.js) ----------
      Decisiones de diseño (2026-11-02): hasta 2 tarjetas por sección (antes 1), las más graves que le toca al perfil
      (el orden del arreglo es el de gravedad); una tarjeta no se repite en dos secciones de la misma consulta; `perfiles`
      vacío = todos («nino» = menor de 12); en rojo no sale ninguna. «En su lugar» usa los ids del corpus filtrados con apta()
@@ -393,9 +460,9 @@
   function tarjetasCuidado() { const c = datos().cuidado; return c && Array.isArray(c.tarjetas) ? c.tarjetas : []; }
   /** Rasgos para `perfiles` de cuidado: «nino» solo si la persona tiene menos de 12 (no a quien consulta por un adolescente). */
   function rasgosCuidado(p) { const r = rasgos(p); if (p.edad >= 12) r.delete("nino"); return r; }
-  /** `edad_minima` (criterio 40): la tarjeta no sale a quien tiene menos (p. ej. ashwagandha o toloache a un niño de 3 años). */
+  /** `edad_minima`: la tarjeta no sale a quien tiene menos (p. ej. ashwagandha o toloache a un niño de 3 años). */
   const edadToca = (x, p) => !x || typeof x.edad_minima !== "number" || p.edad >= x.edad_minima;
-  /** Ronda 3 (criterio 73): `edad_maxima_nino` (exclusiva, contra la edad más alta del grupo, como `excluir.edad_maxima`):
+  /** Ronda 3: `edad_maxima_nino` (exclusiva, contra la edad más alta del grupo, como `excluir.edad_maxima`):
       el rasgo «nino» de `perfiles` solo cuenta si el niño o la niña tiene menos de esa edad. Los demás rasgos (p. ej.
       «lactancia») no cambian: te_agua_bebe sale a menores de 2 años y a quien da pecho. */
   function rasgosDeTarjeta(c, p, r) {
@@ -406,7 +473,7 @@
     const rt = rasgosDeTarjeta(c, p, r);
     return edadToca(c, p) && (!Array.isArray(c.perfiles) || !c.perfiles.length || c.perfiles.some(k => rt.has(k)));
   }
-  /** Ronda 3 (criterio 73): `en_su_lugar_por_seccion: { tema: { en_su_lugar: [ids], texto_en_su_lugar } }` cambia el
+  /** Ronda 3: `en_su_lugar_por_seccion: { tema: { en_su_lugar: [ids], texto_en_su_lugar } }` cambia el
       «En su lugar» de la tarjeta cuando sale en esa sección (la ruda en Embarazo: lo del embarazo, no lo de los cólicos). */
   function enSuLugar(c, p, tema) {
     const propia = objeto(objeto(c.en_su_lugar_por_seccion)[tema]);
@@ -414,7 +481,7 @@
     const ids = Array.isArray(c.en_su_lugar) ? c.en_su_lugar : [];
     const t = temaDe(tema); // como en «No lo encuentro»: solo los tipos que permite la sección (Niños: comida y hábitos)
     const aptas = ids.map(porId).filter(e => e && apta(e, p) && permitido(t, e));
-    const alternativas = aptas.map(e => ({ entrada: e, como: comoPara(e, p) || e.para, avisos: avisosPara(e, p) }));
+    const alternativas = aptas.map(e0 => { const e = adaptar(e0, p); return { entrada: e, como: comoPara(e, p) || e.para, avisos: avisosPara(e0, p) }; });
     // El aviso general de la entrada lo conoce la curaduría que escribió el texto; un aviso PERSONAL (medicina, perfil,
     // condición, «No sé»…) no: entonces se listan las alternativas con sus avisos.
     const completo = ids.length > 0 && aptas.length === ids.length && alternativas.every(a => a.avisos.every(x => esGeneral(x, a.entrada)));
@@ -435,10 +502,14 @@
     for (let vuelta = 0; vuelta < MAX_CUIDADO; vuelta++) {
       for (const tema of elegidos) {
         if (out[tema].length !== vuelta) continue; // la sección ya no tiene más tarjetas que le toquen
-        const c = tarjetasCuidado().find(x => !usadas.has(x.id) && (x.secciones || []).includes(tema) && cuidadoToca(x, p, r));
+        const c = tarjetasCuidado().find(x => !usadas.has(x.id) && (x.secciones || []).includes(tema) && cuidadoToca(x, p, r) && !(proteccionMenor(p) && noParaMenorEmbarazada(x)));
         if (!c) continue;
         usadas.add(c.id);
-        out[tema].push(Object.assign({ tema, tarjeta: c }, enSuLugar(c, p, tema)));
+        // 99: a una menor embarazada, la variante sin lactancia (`por_perfil.menor_embarazo`) y sin frases que den por hecho el parto
+        const cm = proteccionMenor(p) ? Object.assign({}, c, objeto(objeto(c.por_perfil).menor_embarazo)) : c;
+        const info = enSuLugar(cm, p, tema);
+        if (cm !== c) { for (const k of ["que_es", "por_que_cuidado", "urgente_si"]) if (cm[k]) cm[k] = quitarFrasesParto(cm[k]); info.texto = quitarFrasesParto(info.texto); }
+        out[tema].push(Object.assign({ tema, tarjeta: cm }, info));
       }
     }
     return out;
@@ -514,7 +585,7 @@
     const agregar = (entrada, tema, porque, forzar) => {
       if (!entrada || (usados.has(entrada.id) && !forzar)) return false;
       usados.add(entrada.id);
-      tarjetas.push({ entrada, tema, porque, avisos: avisosPara(entrada, p) });
+      tarjetas.push({ entrada: adaptar(entrada, p), tema, porque, avisos: avisosPara(entrada, p) });
       return true;
     };
 
@@ -531,11 +602,11 @@
       && !lista.some(x => x !== e && !usados.has(x.id) && !elegidas.includes(x)));
     for (const [k, tema] of elegidos.entries()) {
       const t = temaDe(tema);
-      const porque = (yo ? "Porque elegiste cuidar: " : "Porque eligieron cuidar: ") + nombreTema(tema) + ".";
-      // Criterio 40: a un menor de 12, sin la franja de adulto (`edad_minima`) ni sus frases de adulto (`texto_no_ninos`)
+      const porque = (yo ? "Porque elegiste cuidar: " : "Porque eligieron cuidar: ") + nombreTema(tema, p) + ".";
+      // A un menor de 12, sin la franja de adulto (`edad_minima`) ni sus frases de adulto (`texto_no_ninos`)
       const ci = t && t.cuando_ir;
       const textoIr = ci && ci.texto && edadToca(ci, p) ? (esMenor(p) && Array.isArray(ci.texto_no_ninos) ? sinFrases(ci.texto, ci.texto_no_ninos) : ci.texto) : null;
-      if (textoIr) franjas.push({ tema, texto: textoIr, fuentes: ci.fuentes || [] });
+      if (textoIr) franjas.push({ tema, texto: textoIr, fuentes: fuentesPara(ci.fuentes || [], p) });
       const candidatos = opciones(tema, p);
       const maximo = MAX_TARJETAS[t && t.clase] || MAX_TARJETAS.molestia;
       const elegidas = []; const porTipo = {};
@@ -552,10 +623,10 @@
         const comida = candidatos.find(e => comidaOHabito(e) && !usados.has(e.id));
         if (comida) elegidas[elegidas.length - 1] = comida;
       }
-      // Criterio 11: si la sección tiene una actividad física apta (`actividad: true`), va al menos una. Si ya no cabe,
+      // Si la sección tiene una actividad física apta (`actividad: true`), va al menos una. Si ya no cabe,
       // sale el último hábito que no es ancla de seguridad; si todos lo son y hay lugar, se agrega aunque pase de
-      // 2 hábitos; si no hay lugar, sale la última tarjeta que no es ancla. Nunca la primera (la de mejor evidencia,
-      // criterio 12) ni un ancla de seguridad (ANCLAS_SEGURIDAD: lavarse las manos, agua segura, vacunas, suero oral).
+      // 2 hábitos; si no hay lugar, sale la última tarjeta que no es ancla. Nunca la primera (la de mejor evidencia)
+      // ni un ancla de seguridad (ANCLAS_SEGURIDAD: lavarse las manos, agua segura, vacunas, suero oral).
       if (elegidas.length && !elegidas.some(e => e.actividad)) {
         const act = candidatos.find(e => e.actividad && !usados.has(e.id) && !elegidas.includes(e) && !dejaSinComida(e, k, elegidas));
         if (act) {
@@ -584,14 +655,14 @@
     return { bloqueado: false, encabezado: encabezado(p), tarjetas, mensajes, franjas, cuidado: cuidado(elegidos, p), cuidados: cuidadoSecciones(elegidos, p), perfil: p };
   }
 
-  /* ---------- Hoja impresa (M2; ronda 3, criterio 58) ---------- */
+  /* ---------- Hoja impresa (M2; ronda 3) ---------- */
   // Rasgos que hacen «de la situación» a una sección-situación (Embarazo y dar pecho, Niñas y niños, Persona mayor)
   const RASGOS_SITUACION = ["embarazo", "lactancia", "nino", "mayor60"];
   /** paraHoja(rec, categorias, { omitir = [], aceptadas = [] } = {}) → [tarjeta] (las mismas de rec.tarjetas), máximo
       MAX_HOJA para que quepa en una carta.
       - omitir: ids de entrada que no van (p. ej. ["senal_prenatal"] si la hoja ya lo dice en otra línea).
       - aceptadas: ids de entrada que la persona aceptó en sus ideas («Lo tengo»). Opcional; sin ella, como antes.
-      Qué entra (criterio 58), en este orden, hasta llenar:
+      Qué entra, en este orden, hasta llenar:
         1. las de señal (fiebre, embarazo);
         2. una de CADA sección elegida; si no caben todas, primero las secciones de la situación de la persona;
         3. las demás, por prioridad: de la situación y aceptada → de la situación o aceptada → el resto → la actividad
@@ -605,7 +676,7 @@
   function paraHoja(rec, categorias, opciones) { return elegirHoja(rec, categorias, opciones).impresas; }
   /** recorteHoja(rec, categorias, opciones) → las mismas tarjetas de paraHoja, en orden de PRIORIDAD (la primera es la que
       más importa). Si la hoja impresa no cabe en una carta, js/pantallas.js (ajustarHoja) quita «ideas de más» empezando
-      por la última de esta lista (criterio 58: primero se quedan las de la situación y las aceptadas). */
+      por la última de esta lista (primero se quedan las de la situación y las aceptadas). */
   function recorteHoja(rec, categorias, opciones) { return elegirHoja(rec, categorias, opciones).prioridad; }
   function elegirHoja(rec, categorias, { omitir = [], aceptadas = [] } = {}) {
     if (!rec || rec.bloqueado) return { impresas: [], prioridad: [] };
@@ -646,7 +717,7 @@
   }
   function tituloHoja(n) { return n === 1 ? "Tu idea" : `Tus ${n} ideas`; }
 
-  /* ---------- Leyenda COFEPRIS (criterio 40) ---------- */
+  /* ---------- Leyenda COFEPRIS ---------- */
   /** requiereLeyenda(entrada) → true si la entrada lleva la leyenda de suplementos («ESTE PRODUCTO NO ES UN MEDICAMENTO…»):
       solo los suplementos que la persona compra por su cuenta. Lo que se pide en el centro de salud (`donde: "centro_salud"`:
       suero oral, ácido fólico y hierro del control prenatal) no la lleva. Sin entrada válida → false. */
@@ -659,7 +730,7 @@
   window.MediBotRecomendaciones = {
     perfil, esSegura, apta, recomendar, alternativas, avisosPara, encabezado, mismoRemedio, ANCLAS_SEGURIDAD,
     noLoEncuentro, textoNoLoEncuentro, comoPara, paraHoja, recorteHoja, vaEnHoja, requiereLeyenda, EDAD_MENOR, tituloHoja, MAX_HOJA, cuidado, cuidadoSecciones, MAX_CUIDADO, textoCuidado,
-    ayudaEn, puntaje, opciones, visible, seccionesVisibles, sugeridas, rasgos,
+    ayudaEn, puntaje, opciones, visible, seccionesVisibles, sugeridas, rasgos, noSugerir, embarazoMenor15, embarazoAdolescente, PROHIBIDAS_MENOR, adaptar, fuentesPara,
     corpus, temas, grupos, temaDe, porId, nombreTema, usaRespaldo, textoAyuda, TIPO_TEXTO, CLAVES_MEDICINA
   };
 })();

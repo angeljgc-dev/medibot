@@ -51,7 +51,7 @@ def main() -> None:
             def pagina(ancho=1280, alto=800, tema="light", escala="md", init=None):
                 ctx = nav.new_context(viewport={"width": ancho, "height": alto}, color_scheme=tema)
                 ctx.add_init_script("window.__impresiones = 0; window.print = () => { window.__impresiones++; }; try { localStorage.clear(); } catch (e) { console.warn(e.message); }"
-                                    " if (window.speechSynthesis) { speechSynthesis.speak = () => {}; }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))  # criterio 79: de fábrica es claro; el oscuro se fuerza como lo elegiría el operador
+                                    " if (window.speechSynthesis) { speechSynthesis.speak = () => {}; }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))  # De fábrica es claro; el oscuro se fuerza como lo elegiría el operador
                 if init: ctx.add_init_script(init)
                 pg = ctx.new_page()
                 pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
@@ -62,7 +62,7 @@ def main() -> None:
                 return pg
 
             def ir(pg, pantalla, sesion, medidas=None, opciones=None):
-                # terminar() vuelve a letra normal (criterio 49): la letra grande se pone de nuevo, como lo haría la persona
+                # terminar() vuelve a letra normal: la letra grande se pone de nuevo, como lo haría la persona
                 r = pg.evaluate("(c) => { const r = (" + PREPARAR + ")(c); if (c.escala === 'lg') document.querySelector('[data-accion=letra]').click(); return r; }",
                                 {"pantalla": pantalla, "sesion": sesion, "medidas": medidas, "opciones": opciones, "escala": ESCALA.get(id(pg), "md")})
                 pg.wait_for_timeout(80); return r
@@ -128,7 +128,7 @@ def main() -> None:
             print("35 · oxígeno urgente confirmado → resultado directo; 36 · Saltar omite de verdad; 50 · temperatura a mano")
             pg = pagina()
             ir(pg, "mediciones", {"paraQuien": "yo", "grupo": "18a59", "medicinas": ["ninguna"]}, medidas=[None, None, None])
-            pg.click("[data-medicion=fc] >> text=Escribir a mano"); pg.fill("#m-fc", "80"); pg.fill("#m-spo2", "84"); pg.press("#m-spo2", "Enter"); pg.wait_for_timeout(150)  # ronda 3, criterio 56: lo escrito cuenta al confirmarlo
+            pg.click("[data-medicion=fc] >> text=Escribir a mano"); pg.fill("#m-fc", "80"); pg.fill("#m-spo2", "84"); pg.press("#m-spo2", "Enter"); pg.wait_for_timeout(150)  # Lo escrito cuenta al confirmarlo
             revisa(boton(pg, "verde") == "Ver qué hacer ahora", f"con el oxígeno en 84 el verde dice «Ver qué hacer ahora» ({boton(pg, 'verde')})")
             accion(pg, "si")
             revisa(pantalla(pg) == "resultado" and pg.evaluate("() => window.MediBot.evaluar().nivel") == "rojo", "S lleva directo al resultado rojo (sin «Qué cuidar» ni «Confirmar»)")
@@ -140,7 +140,7 @@ def main() -> None:
             m = sesion(pg)["medidas"]
             revisa(m["fc"]["valor"] is None and m["fc"]["estado"] is None, f"Saltar omite la medición pendiente: {m['fc']}")
             accion(pg, "no")  # salta la temperatura
-            accion(pg, "no")  # salta el peso (criterio 41: ahora es la medición 3 de 3)
+            accion(pg, "no")  # salta el peso (ahora es la medición 3 de 3)
             accion(pg, "si")  # continuar
             revisa(pantalla(pg) == "cuidar", f"y se puede seguir solo con botones ({pantalla(pg)})")
             # revisión independiente: un oxígeno urgente SIN confirmar que se salta no se borra sin rastro, y la voz dice «Rojo: saltar»
@@ -154,7 +154,7 @@ def main() -> None:
             ir(pg, "mediciones", {"paraQuien": "yo", "grupo": "18a59"}, medidas=[None, None, None], opciones={"medicion": 1})
             pg.click("[data-medicion=temp] >> text=Escribir a mano"); pg.type("#m-temp", "35.5", delay=60); pg.wait_for_timeout(20)
             revisa(boton(pg, "verde") != "Ver qué hacer ahora", "escribiendo «35.5» a mano, el verde no salta a «Ver qué hacer ahora» a la mitad")
-            pg.fill("#m-temp", "36.5"); pg.press("#m-temp", "Enter"); pg.wait_for_timeout(150)  # criterio 56: se confirma
+            pg.fill("#m-temp", "36.5"); pg.press("#m-temp", "Enter"); pg.wait_for_timeout(150)  # Se confirma
             revisa(boton(pg, "verde") == "Siguiente", f"50: tras escribir la temperatura, el verde dice «Siguiente» ({boton(pg, 'verde')})")
             pg.close()
 
@@ -233,7 +233,7 @@ def main() -> None:
             pg.close()
 
             # ------------------------------------------------------------------------------------------------ 42, 43
-            print("42 · tocar con la voz encendida elige esa opción y detiene la voz; 43 · «Si eres mujer…» y «No / soy hombre» primero")
+            print("42 · tocar con la voz encendida elige esa opción y detiene la voz; 43 → 81 · sexo antes del embarazo, sin «Si eres mujer…» ni «No / soy hombre»")
             pg = pagina(init="window.medibotEscritorio = { esApp: true, version: 'x', salida: 'x', salir() {}, imprimir: async () => ({ ok: true, motivo: '' }) };")
             ir(pg, "medicinas", {"paraQuien": "yo", "grupo": "18a59", "medicinas": []}, opciones={"lista": True})
             pg.evaluate("() => window.MediBotVoz.leerPantalla()")
@@ -241,10 +241,26 @@ def main() -> None:
             u = ultimo(pg)
             marcadas = pg.evaluate("() => [...document.querySelectorAll('.opcion--preguntando')].length")
             revisa(sesion(pg)["medicinas"] == ["azucar"] and marcadas == 0 and u.startswith("Elegiste") and "¿" not in u, f"elige solo esa, sin resaltar otra y sin seguir preguntando: {sesion(pg)['medicinas']}, {marcadas}, «{u[:60]}»")
+            # el 43 lo reemplaza el 81 (2026-11-15)
+            BLOQUE = """(id) => { const b = document.querySelector(`#app .bloque[data-bloque=${id}]`); if (!b || b.hidden || !b.getClientRects().length) return null;
+              const bs = [...document.querySelectorAll('#app .bloque')]; return { pos: bs.indexOf(b), titulo: b.querySelector('h2').textContent,
+              opciones: [...b.querySelectorAll('.opcion')].filter(o => !o.hidden).map(o => o.querySelector('.opcion__texto b').textContent.trim()) }; }"""
             ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59"})
-            emb = pg.evaluate("() => { const b = document.querySelectorAll('.bloque')[3]; return b ? [b.querySelector('h2').textContent, b.querySelector('.opcion').textContent] : null; }")
-            revisa(emb and "Si eres mujer" in emb[0] and emb[1].startswith("No / soy hombre"), f"la pregunta de embarazo: {emb}")
-            revisa("Si eres mujer" in voz(pg), "la voz también dice «Si eres mujer»: " + voz(pg)[:90])
+            sx = pg.evaluate(BLOQUE, "sexo")
+            revisa(sx and sx["opciones"] == ["Mujer", "Hombre", "Prefiero no decir"] and pg.evaluate(BLOQUE, "embarazo") is None, f"la pregunta de sexo existe y, sin contestarla, todavía no hay embarazo: {sx}")
+            pg.locator("#app .bloque[data-bloque=sexo] .opcion", has_text="Hombre").first.click(); pg.wait_for_timeout(80)
+            g = voz(pg)
+            revisa(pg.evaluate(BLOQUE, "embarazo") is None and "embaraz" not in g and "pecho" not in g, "con «Hombre» no hay embarazo ni lactancia, ni en pantalla ni en voz: " + g[-80:])
+            pg.locator("#app .bloque[data-bloque=sexo] .opcion", has_text="Mujer").first.click(); pg.wait_for_timeout(80)
+            emb, sx = pg.evaluate(BLOQUE, "embarazo"), pg.evaluate(BLOQUE, "sexo")
+            revisa(emb and emb["pos"] > sx["pos"] and "Si eres mujer" not in emb["titulo"] and not any("soy hombre" in o for o in emb["opciones"]) and emb["opciones"][0] == "No",
+                   f"con «Mujer», después del sexo, la pregunta de embarazo sin «Si eres mujer» ni «No / soy hombre»: {emb}")
+            ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59"})
+            g1 = voz(pg)
+            u2 = pg.evaluate("() => { window.MediBotVoz.accion('si'); return window.MediBotVoz.ultimoTexto; }")  # verde a «¿Eres mujer?»
+            titulo_emb = pg.evaluate(BLOQUE, "embarazo")["titulo"].replace("(opcional)", "").strip()
+            revisa("¿Eres mujer?" in g1 and "Si eres mujer" not in g1 and titulo_emb in u2 and "Si eres mujer" not in u2,
+                   f"la voz pregunta el sexo y luego el embarazo con el mismo texto de la pantalla: «{g1[-40:]}» → «{u2[-70:]}» (pantalla: «{titulo_emb}»)")
             pg.close()
 
             # ------------------------------------------------------------------------------------------------ 44, 49

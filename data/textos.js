@@ -1,5 +1,9 @@
 /* Textos fijos de MediBot. Versión 0.5 (2026-11-02): rediseño (docs/diseno/sistema.md); antes 0.2, tras revisión clínico-regulatoria.
    Regla: lenguaje sencillo, frases cortas. La palabra "diagnóstico" solo aparece negada ("no es un ... diagnóstico"). */
+/* embarazo_menor y edad_adolescente (87): textos revisados contra fuentes oficiales y aprobados
+   el 2026-11-15; se usan tal cual. La voz agrupa los números como data/lugares.js.
+   15a17_hoy: el mismo texto del 85b con la prisa «hoy» en lugar de «pronto, de preferencia esta semana», para cuando el
+   semáforo ya pide ir hoy (ámbar con prisa «hoy») o es rojo; decisión de diseño del 2026-11-15. */
 window.MediBotData = window.MediBotData || {};
 window.MediBotData.textos = {
   "version": "0.5",
@@ -24,7 +28,7 @@ window.MediBotData.textos = {
       "Responsable: equipo MediBot, grupo 301 de TSU en Automatización.",
       "MediBot usa tus respuestas y tus medidas de pulso, oxígeno, temperatura, peso y estatura solo para mostrarte orientación en esta pantalla. Son datos de salud, que la ley considera sensibles.",
       "Es gratis. No guardamos tu nombre ni tus datos.",
-      "No te pedimos tu nombre. No se guarda nada, no sale de este equipo y se borra al terminar.",
+      "Nada sale de este equipo y se borra al terminar.",
       "Si no quieres que se usen, no continúes o toca Terminar. Aviso completo: cartel junto al quiosco."
     ],
     "boton": "Entiendo, empezar"
@@ -100,7 +104,7 @@ window.MediBotData.textos = {
     "texto": "Mostramos los valores con el rango de su edad. Llévalos a su centro de salud en la siguiente revisión; ahí sí pueden valorarlo bien."
   },
 
-  "_trato_nino": "Criterio 59: en la consulta para un niño o una niña, el resultado, su voz y la hoja le hablan al adulto que lo acompaña. Cada par es [lo que dice para un adulto, lo que dice para el niño]; se cambia el texto tal cual (js/pantallas.js, tratoPara).",
+  "_trato_nino": "En la consulta para un niño o una niña, el resultado, su voz y la hoja le hablan al adulto que lo acompaña. Cada par es [lo que dice para un adulto, lo que dice para el niño]; se cambia el texto tal cual (js/pantallas.js, tratoPara).",
   "trato_nino": [
     ["Conviene que te revise personal de salud", "Conviene que personal de salud revise al niño o la niña"],
     ["Necesitas atención médica ahora.", "El niño o la niña necesita atención médica ahora."],
@@ -125,15 +129,154 @@ window.MediBotData.textos = {
     ["Tus mediciones: ", "Sus mediciones: "]
   ],
 
-  "embarazo": {
-    "pregunta": "Si eres mujer: ¿estás embarazada o crees que puedes estarlo?",
-    "pregunta_otra": "Si es mujer: ¿la persona está embarazada o cree que puede estarlo?",
-    "ayuda": "Opcional. Sirve para no darte ideas que no son para el embarazo ni para cuando das pecho. Si prefieres no decir, no te damos nada que no sea para el embarazo.",
+  "_sexo": "Ronda 6: la pregunta de sexo va después de la edad; el embarazo y la lactancia solo se preguntan con «Mujer» o «Prefiero no decir». Es opcional y no cambia el semáforo ni ningún rango.",
+  "sexo": {
+    "titulo": "¿Eres mujer u hombre?",
+    "titulo_otra": "¿La persona es mujer u hombre?",
+    "titulo_nino": "¿Es niña o niño?",
+    "ayuda": "Sirve para no darte ideas que no son para ti, como las del embarazo.",
+    "ayuda_otra": "Sirve para no darle ideas que no son para su caso, como las del embarazo.",
     "opciones": [
-      { "id": "no", "nombre": "No / soy hombre", "voz": "¿No estás embarazada, o eres hombre?" },
-      { "id": "si", "nombre": "Sí, estoy embarazada", "voz": "Si eres mujer, ¿estás embarazada o crees que puedes estarlo?" },
-      { "id": "lactancia", "nombre": "Estoy dando pecho", "voz": "¿Estás dando pecho?", "voz_tras_no": "Si eres mujer, ¿estás dando pecho?" },
-      { "id": "no_decir", "nombre": "Prefiero no decir", "voz": "¿Prefieres no decirlo?" }
+      { "id": "mujer", "nombre": "Mujer", "nombre_nino": "Niña", "voz": "¿Eres mujer?", "voz_otra": "¿La persona es mujer?", "voz_nino": "¿Es niña?" },
+      { "id": "hombre", "nombre": "Hombre", "nombre_nino": "Niño", "voz": "¿Eres hombre?", "voz_otra": "¿La persona es hombre?", "voz_nino": "¿Es niño?" },
+      { "id": "no_decir", "nombre": "Prefiero no decir", "voz": "¿Prefieres no decirlo?", "voz_otra": "¿Prefieres no decirlo?", "voz_nino": "¿Prefieres no decirlo?" }
+    ]
+  },
+
+  "edad_adolescente": {
+    "titulo": "¿De qué edad, más o menos?",
+    "opciones": [
+      {
+        "id": "12a14",
+        "nombre": "12 a 14 años",
+        "voz": "¿Tienes de 12 a 14 años?",
+        "voz_otra": "¿La persona tiene de 12 a 14 años?"
+      },
+      {
+        "id": "15a17",
+        "nombre": "15 a 17 años",
+        "voz": "¿Tienes de 15 a 17 años?",
+        "voz_otra": "¿La persona tiene de 15 a 17 años?"
+      }
+    ]
+  },
+  "embarazo_menor": {
+    "accion": { "yo": "Por el embarazo, ve {cuando} al centro de salud.", "otra": "Por el embarazo, llévala {cuando} al centro de salud." },
+    "nota_911": "Las 24 horas, todos los días.",
+    "nina": {
+      "titulo": "Hoy ve al centro de salud",
+      "parrafos": [
+        "Gracias por decirnos. Tú no hiciste nada malo.",
+        "A tu edad, el embarazo necesita revisión desde ya. Ve hoy al centro de salud. Es gratis.",
+        "Ahí te atienden con respeto y responden tus dudas. Puedes pedir hablar a solas con la doctora, el doctor o la enfermera.",
+        "Si algo te da miedo o quieres hablar con alguien, llama gratis al 079 y elige la opción 1. Te contestan de día y de noche.",
+        "Si sangras mucho, te desmayas o te da un ataque, llama ya al 911."
+      ],
+      "voz": "Gracias por decirnos. Tú no hiciste nada malo. A tu edad, el embarazo necesita revisión desde ya. Ve hoy al centro de salud. Es gratis. Puedes pedir hablar a solas con la doctora, el doctor o la enfermera. Si algo te da miedo o quieres hablar con alguien, marca cero, siete, nueve. Cuando te contesten, elige la opción uno. Es gratis, de día y de noche. Si sangras mucho, te desmayas o te da un ataque, llama ya al nueve, uno, uno.",
+      "hoja": [
+        "Embarazo: ve HOY al centro de salud. Es gratis.",
+        "Puedes pedir hablar a solas con el personal de salud.",
+        "Líneas: 079, opción 1 (gratis, confidencial, 24 horas) · 911 emergencias."
+      ]
+    },
+    "adulto": {
+      "titulo": "Hoy llévala al centro de salud",
+      "parrafos": [
+        "Una niña embarazada necesita revisión médica desde ya. Llévala hoy al centro de salud. Es gratis.",
+        "Ahí la atienden con respeto. Ella tiene derecho a hablar a solas con la doctora, el doctor o la enfermera.",
+        "Ella no tiene la culpa. Lo que más la ayuda es que la acompañen con cariño y sin regaños.",
+        "Si ella o tú necesitan orientación, llamen gratis al 079, opción 1. Atienden de día y de noche.",
+        "Si sangra mucho, se desmaya o le da un ataque, llama ya al 911."
+      ],
+      "voz": "Una niña embarazada necesita revisión médica desde ya. Llévala hoy al centro de salud. Es gratis. Ella tiene derecho a hablar a solas con la doctora, el doctor o la enfermera. Ella no tiene la culpa. Lo que más la ayuda es que la acompañen con cariño y sin regaños. Si ella o tú necesitan orientación, marca cero, siete, nueve. Cuando te contesten, elige la opción uno. Es gratis, de día y de noche. Si sangra mucho, se desmaya o le da un ataque, llama ya al nueve, uno, uno.",
+      "hoja": [
+        "Embarazo: ir HOY al centro de salud. Es gratis.",
+        "Las niñas y adolescentes tienen derecho a hablar a solas con el personal de salud.",
+        "Líneas: 079, opción 1 (gratis, confidencial, 24 horas) · 911 emergencias."
+      ]
+    },
+    "15a17_hoy": {
+      "nina": {
+        "titulo": "Hoy ve al centro de salud",
+        "parrafos": [
+          "Gracias por decirnos. Tú no hiciste nada malo.",
+          "Ve hoy al centro de salud. Es gratis.",
+          "Ahí te atienden con respeto y responden tus dudas. Puedes pedir hablar a solas con el personal de salud.",
+          "Si algo te da miedo o quieres hablar con alguien, llama gratis al 079, opción 1. Te contestan de día y de noche.",
+          "Si sangras mucho, te desmayas o te da un ataque, llama ya al 911."
+        ],
+        "voz": "Gracias por decirnos. Tú no hiciste nada malo. Ve hoy al centro de salud. Es gratis. Puedes pedir hablar a solas con el personal de salud. Si algo te da miedo o quieres hablar con alguien, marca cero, siete, nueve. Cuando te contesten, elige la opción uno. Es gratis, de día y de noche. Si sangras mucho, te desmayas o te da un ataque, llama ya al nueve, uno, uno.",
+        "hoja": [
+          "Embarazo: ve HOY al centro de salud. Es gratis.",
+          "Puedes pedir hablar a solas con el personal de salud.",
+          "Líneas: 079, opción 1 (gratis, confidencial, 24 horas) · 911 emergencias."
+        ]
+      },
+      "adulto": {
+        "titulo": "Hoy llévala al centro de salud",
+        "parrafos": [
+          "Llévala hoy al centro de salud. Es gratis.",
+          "Ella tiene derecho a hablar a solas con el personal de salud.",
+          "Ella no tiene la culpa. Lo que más la ayuda es que la acompañen con cariño y sin regaños.",
+          "Si ella o tú necesitan orientación, llamen gratis al 079, opción 1. Atienden de día y de noche.",
+          "Si sangra mucho, se desmaya o le da un ataque, llama ya al 911."
+        ],
+        "voz": "Llévala hoy al centro de salud. Es gratis. Ella tiene derecho a hablar a solas con el personal de salud. Ella no tiene la culpa. Lo que más la ayuda es que la acompañen con cariño y sin regaños. Si ella o tú necesitan orientación, marca cero, siete, nueve. Cuando te contesten, elige la opción uno. Es gratis, de día y de noche. Si sangra mucho, se desmaya o le da un ataque, llama ya al nueve, uno, uno.",
+        "hoja": [
+          "Embarazo: ir HOY al centro de salud. Es gratis.",
+          "Las adolescentes tienen derecho a hablar a solas con el personal de salud.",
+          "Líneas: 079, opción 1 (gratis, confidencial, 24 horas) · 911 emergencias."
+        ]
+      }
+    },
+    "15a17": {
+      "nina": {
+        "titulo": "Ve pronto al centro de salud, esta semana",
+        "parrafos": [
+          "Gracias por decirnos. Tú no hiciste nada malo.",
+          "Ve pronto al centro de salud, de preferencia esta semana. Es gratis.",
+          "Ahí te atienden con respeto y responden tus dudas. Puedes pedir hablar a solas con el personal de salud.",
+          "Si algo te da miedo o quieres hablar con alguien, llama gratis al 079, opción 1. Te contestan de día y de noche.",
+          "Si sangras mucho, te desmayas o te da un ataque, llama ya al 911."
+        ],
+        "voz": "Gracias por decirnos. Tú no hiciste nada malo. Ve pronto al centro de salud, de preferencia esta semana. Es gratis. Puedes pedir hablar a solas con el personal de salud. Si algo te da miedo o quieres hablar con alguien, marca cero, siete, nueve. Cuando te contesten, elige la opción uno. Es gratis, de día y de noche. Si sangras mucho, te desmayas o te da un ataque, llama ya al nueve, uno, uno.",
+        "hoja": [
+          "Embarazo: ve pronto al centro de salud, de preferencia esta semana. Es gratis.",
+          "Puedes pedir hablar a solas con el personal de salud.",
+          "Líneas: 079, opción 1 (gratis, confidencial, 24 horas) · 911 emergencias."
+        ]
+      },
+      "adulto": {
+        "titulo": "Llévala pronto al centro de salud, esta semana",
+        "parrafos": [
+          "Llévala pronto al centro de salud, de preferencia esta semana. Es gratis.",
+          "Ella tiene derecho a hablar a solas con el personal de salud.",
+          "Ella no tiene la culpa. Lo que más la ayuda es que la acompañen con cariño y sin regaños.",
+          "Si ella o tú necesitan orientación, llamen gratis al 079, opción 1. Atienden de día y de noche.",
+          "Si sangra mucho, se desmaya o le da un ataque, llama ya al 911."
+        ],
+        "voz": "Llévala pronto al centro de salud, de preferencia esta semana. Es gratis. Ella tiene derecho a hablar a solas con el personal de salud. Ella no tiene la culpa. Lo que más la ayuda es que la acompañen con cariño y sin regaños. Si ella o tú necesitan orientación, marca cero, siete, nueve. Cuando te contesten, elige la opción uno. Es gratis, de día y de noche. Si sangra mucho, se desmaya o le da un ataque, llama ya al nueve, uno, uno.",
+        "hoja": [
+          "Embarazo: ir pronto al centro de salud, de preferencia esta semana. Es gratis.",
+          "Las adolescentes tienen derecho a hablar a solas con el personal de salud.",
+          "Líneas: 079, opción 1 (gratis, confidencial, 24 horas) · 911 emergencias."
+        ]
+      }
+    }
+  },
+
+  "embarazo": {
+    "pregunta": "¿Estás embarazada o crees que puedes estarlo?",
+    "pregunta_otra": "¿La persona está embarazada o cree que puede estarlo?",
+    "pregunta_nino": "¿La niña está embarazada o cree que puede estarlo?",
+    "ayuda": "Sirve para no darte ideas que no son para el embarazo ni para cuando das pecho. Si prefieres no decir, no te damos nada que no sea para el embarazo.",
+    "ayuda_otra": "Sirve para no darle ideas que no son para el embarazo ni para cuando da pecho. Si prefieres no decir, no le damos nada que no sea para el embarazo.",
+    "ayuda_nino": "Sirve para no darle ideas que no son para el embarazo. Si prefieres no decir, no le damos nada que no sea para el embarazo.",
+    "opciones": [
+      { "id": "no", "nombre": "No", "voz": "¿No estás embarazada?", "voz_otra": "¿La persona no está embarazada?", "voz_nino": "¿La niña no está embarazada?" },
+      { "id": "si", "nombre": "Sí, estoy embarazada", "nombre_otra": "Sí, está embarazada", "voz": "¿Estás embarazada o crees que puedes estarlo?", "voz_otra": "¿La persona está embarazada o cree que puede estarlo?", "voz_nino": "¿La niña está embarazada o cree que puede estarlo?" },
+      { "id": "lactancia", "nombre": "Estoy dando pecho", "nombre_otra": "Está dando pecho", "voz": "¿Estás dando pecho?", "voz_otra": "¿La persona está dando pecho?", "voz_nino": "¿La niña está dando pecho?" },
+      { "id": "no_decir", "nombre": "Prefiero no decir", "voz": "¿Prefieres no decirlo?", "voz_otra": "¿Prefieres no decirlo?", "voz_nino": "¿Prefieres no decirlo?" }
     ],
     "linea": "Como estás embarazada, acude a tu control prenatal aunque te sientas bien, y comenta ahí cualquier suplemento antes de tomarlo.",
     "linea_otra": "Como la persona está embarazada, que acuda a su control prenatal aunque se sienta bien, y que comente ahí cualquier suplemento antes de tomarlo.",
@@ -157,7 +300,8 @@ window.MediBotData.textos = {
     "opciones": [
       { "id": "menos2", "nombre": "Menos de 2 años", "voz": "¿El niño o la niña tiene menos de 2 años?" },
       { "id": "2a5", "nombre": "2 a 5 años", "voz": "¿El niño o la niña tiene de 2 a 5 años?" },
-      { "id": "6a11", "nombre": "6 a 11 años", "voz": "¿El niño o la niña tiene de 6 a 11 años?" }
+      { "id": "6a8", "nombre": "6 a 8 años", "voz": "¿El niño o la niña tiene de 6 a 8 años?" },
+      { "id": "9a11", "nombre": "9 a 11 años", "voz": "¿El niño o la niña tiene de 9 a 11 años?" }
     ]
   },
 
@@ -243,6 +387,7 @@ window.MediBotData.textos = {
       },
       "prenatal": {
         "id": "senal_prenatal", "tipo": "habito", "nombre": "Tu control prenatal",
+        "por_perfil": {"tercera": {"nombre": "Su control prenatal", "para": "En el embarazo, lo que más la cuida es ir a todas sus citas de control.", "como": "Ácido fólico y hierro: los que le dan en su control. Que no tome otros sin preguntar ahí.", "si_no_hay": "Si todavía no tiene cita, que la pida en su centro de salud."}, "tercera_nina": {"para": "En el embarazo, lo que más cuida a la niña es ir a todas sus citas de control."}},
         "para": "En el embarazo, lo que más te cuida es ir a todas tus citas de control.",
         "como": "Ácido fólico y hierro: los que te da tu control. No tomes otros sin preguntar ahí.",
         "ayuda": 3, "evidencia": "Recomendación de MedlinePlus para el embarazo.",
@@ -275,7 +420,7 @@ window.MediBotData.textos = {
     "verde": "Dentro de lo esperado",
     "ambar": "Conviene revisar",
     "rojo": "Fuera de lo esperado: urgente",
-    "nd": "Se muestra sin clasificar",
+    "nd": "Se muestra sin semáforo",
     "invalida": "Medición no válida"
   },
 
@@ -303,10 +448,10 @@ window.MediBotData.textos = {
 
   "acerca": {
     "parrafos": [
-      "Este proyecto nació al analizar un aparato que se vende como 'analizador cuántico'. Al abrir su base de datos vimos que sus 'diagnósticos' son frases escritas de antemano (etiquetadas R01A a R62B) que el programa elige según un número. No mide nada del cuerpo.",
-      "Un aparato así puede tranquilizar a alguien enfermo o asustar a alguien sano. Por eso MediBot hace lo contrario: usa sensores que se pueden comprobar con una pesa patrón o un termómetro, dice de dónde sale cada rango y cada consejo, y siempre te manda con personal de salud.",
-      "MediBot no da diagnósticos porque eso requiere a un profesional que te explore, te pregunte y pida estudios. Lo que sí puede hacer un quiosco honesto es orientar: avisarte cuando algo merece revisión y darte información con fuente.",
-      "Todo lo que ves aquí se puede revisar: cada número tiene un enlace a su fuente, la báscula y el termómetro tienen bitácora de calibración, y el código está abierto para el jurado y la comunidad."
+      "Este proyecto nació al revisar un aparato que se vende como 'analizador cuántico'. Por dentro vimos que sus 'diagnósticos' son frases escritas de antemano que el programa escoge solo. No mide nada del cuerpo.",
+      "Un aparato así puede tranquilizar a alguien enfermo o asustar a alguien sano. Por eso MediBot hace lo contrario: usa sensores que se pueden revisar con una pesa o un termómetro, dice de dónde sale cada consejo y siempre te manda con personal de salud.",
+      "MediBot no te dice qué enfermedad tienes porque para eso hace falta una doctora o un doctor que te revise, te pregunte y, si se necesita, pida estudios. Lo que sí hace es orientarte: avisarte cuando algo merece revisión y darte ideas para cuidarte.",
+      "Todo se puede revisar: en tu hoja dice de dónde sale cada consejo, y la báscula y el termómetro se comprueban seguido."
     ]
   },
 

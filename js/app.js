@@ -25,13 +25,13 @@
   let opciones = {};        // opciones de la navegación (volverA, corregir, imprimir)
   let volverA = null;       // después de corregir, «Continuar» regresa a revisar
   let botones = null;       // botonera de la pantalla actual
-  let turnoActual = null;   // identifica la pantalla pintada (criterio 52)
+  let turnoActual = null;   // identifica la pantalla pintada
   let tAviso = null, tFin = null, tCuenta = null, tLectura = null;
   const config = { altitud: leerPref("altitud", 0, Number), bitacora: leerPref("bitacora", [], JSON.parse) };
 
   function nuevaSesion() {
     return {
-      paraQuien: null, grupo: null, edadNino: null, embarazo: null, embarazoRespondido: false, embarazoOpcion: null,
+      paraQuien: null, grupo: null, edadNino: null, sexo: null, edadAdol: null, embarazo: null, embarazoRespondido: false, embarazoOpcion: null, // ronda 6
       medicinas: [], // no se guarda: vive solo en esta sesión y se borra al terminar
       condiciones: [],
       situaciones: null,
@@ -47,7 +47,7 @@
     let siguiente = destino || ORDEN[Math.min(Math.max(i, 0) + 1, ORDEN.length - 1)];
     if (!destino && volverA) {
       // Después de corregir, de vuelta a revisar; pero si el perfil nuevo tiene preguntas de alarma sin contestar
-      // (p. ej. al cambiar a un niño), primero esas (criterio 54)
+      // (p. ej. al cambiar a un niño), primero esas
       const pendientes = D.alarma.preguntas.some(p => window.MediBotReglas.aplicaPregunta(p, sesion) && sesion.alarma[p.id] !== true && sesion.alarma[p.id] !== false);
       if (ORDEN.indexOf(actual) < ORDEN.indexOf("alarma") && pendientes) siguiente = "alarma";
       else { siguiente = volverA; volverA = null; }
@@ -79,16 +79,16 @@
   function terminar() {
     if (sensores.modo === "sim") sensores.desconectar(); // una lectura simulada nunca pasa a la siguiente persona
     sesion = nuevaSesion(); resultado = null; actual = "reposo"; impreso = false; opciones = {}; volverA = null;
-    letraNormal(); // criterio 49: la siguiente persona empieza con letra normal
+    letraNormal(); // La siguiente persona empieza con letra normal
     cerrarDialogos(); detenerInactividad(); render();
   }
 
   /* ---------- Pintar ---------- */
   function render() {
     const app = $("#app");
-    const turno = {}; turnoActual = turno; // criterio 52: una pantalla ya cerrada no pinta la botonera de otra
+    const turno = {}; turnoActual = turno; // Una pantalla ya cerrada no pinta la botonera de otra
     const ctx = {
-      sesion, ir, atras, terminar, datos: D, sensores, resultado, actividad, config, opciones, volverA, // criterio 54: a dónde lleva el verde
+      sesion, ir, atras, terminar, datos: D, sensores, resultado, actividad, config, opciones, volverA, // A dónde lleva el verde
       get impreso() { return impreso; }, imprimir, pedirBorrar, pedirCerrarApp, botonera: (b) => { if (turnoActual === turno) pintarBotonera(b); }, vigente: () => turnoActual === turno, titulo: (t) => { $("#titulo-pantalla").textContent = t || ""; },
       abrirOperador, cerrarPanel, tema: alternarTema,
       guardarBitacora: b => { config.bitacora = b; guardarPref("bitacora", JSON.stringify(b)); }, guardarPref
@@ -169,11 +169,11 @@
   $("#dlg-borrar").addEventListener("cancel", e => { e.preventDefault(); seguir(); });
   function cerrarDialogos() { $$("dialog").forEach(d => { if (d.open) d.close(); }); }
 
-  /* ---------- Criterio 76: cerrar la app desde el reposo (js/pantallas.js, cerrarApp) ---------- */
+  /* ---------- Cerrar la app desde el reposo (js/pantallas.js, cerrarApp) ---------- */
   let tCerrarApp = 0;
   function pedirCerrarApp() {
     const d = $("#dlg-cerrar");
-    if (!window.medibotEscritorio || actual !== "reposo" || d.open) return;
+    if (!window.medibotEscritorio || !["reposo", "operador"].includes(actual) || d.open) return; // 105: también desde el panel
     d.showModal(); $('#dlg-cerrar [data-accion="cerrar-app-no"]').focus();
     clearTimeout(tCerrarApp); tCerrarApp = setTimeout(() => { if (d.open) d.close(); }, 15000); // nadie contesta: la app sigue
   }
@@ -199,7 +199,7 @@
   /* ---------- Panel del operador: solo con el gesto ---------- */
   function abrirOperador() { cerrarDialogos(); actual = "operador"; opciones = {}; render(); }
   /** Cerrar el panel: reposo con una sesión nueva, SIN apagar la simulación que el operador acaba de encender. */
-  function cerrarPanel() { sesion = nuevaSesion(); resultado = null; impreso = false; opciones = {}; volverA = null; actual = "reposo"; letraNormal(); cerrarDialogos(); detenerInactividad(); render(); } // criterio 49 también al cerrar el panel
+  function cerrarPanel() { sesion = nuevaSesion(); resultado = null; impreso = false; opciones = {}; volverA = null; actual = "reposo"; letraNormal(); cerrarDialogos(); detenerInactividad(); render(); } // letra normal también al cerrar el panel
   let tGesto = null, gestoHecho = false;
   const marca = $(".marca");
   marca.addEventListener("pointerdown", () => { gestoHecho = false; clearTimeout(tGesto); tGesto = setTimeout(() => { gestoHecho = true; abrirOperador(); }, GESTO_LOGO_MS); });
@@ -233,7 +233,7 @@
     else if (a === "terminar") pedirBorrar();
     else if (a === "seguir") seguir();
     else if (a === "borrar") terminar();
-    else if (a === "letra") { const on = document.documentElement.dataset.scale !== "lg"; document.documentElement.dataset.scale = on ? "lg" : "md"; b.setAttribute("aria-pressed", String(on)); b.blur(); $("#app").focus({ preventScroll: true }); } // criterio 49: Enter después no la apaga
+    else if (a === "letra") { const on = document.documentElement.dataset.scale !== "lg"; document.documentElement.dataset.scale = on ? "lg" : "md"; b.setAttribute("aria-pressed", String(on)); b.blur(); $("#app").focus({ preventScroll: true }); } // Enter después no la apaga
     else if (a === "acerca") { $("#acerca-cuerpo").replaceChildren(...D.textos.acerca.parrafos.map(p => h("p", p))); $("#dlg-acerca").showModal(); if (Voz()) Voz().leer(Voz().textoDialogo($("#dlg-acerca"))); }
     else if (a === "cerrar-acerca") $("#dlg-acerca").close();
     else if (a === "apoyo") {
@@ -252,7 +252,7 @@
   function guardarPref(k, v) { try { localStorage.setItem("medibot." + k, v); } catch (e) { console.warn("No se pudo guardar la preferencia " + k + ":", e.message); } }
   function leerPref(k, def, parse) { try { const v = localStorage.getItem("medibot." + k); return v === null ? def : (parse ? parse(v) : v); } catch (e) { console.warn("No se pudo leer la preferencia " + k + ":", e.message); return def; } }
   function cargarPrefs() {
-    // Criterio 79: de fábrica, claro (se lee mejor con luz de día); si el operador eligió tema en el panel, el suyo
+    // De fábrica, claro (se lee mejor con luz de día); si el operador eligió tema en el panel, el suyo
     const t = leerPref("theme", null); document.documentElement.dataset.theme = t === "dark" || t === "light" ? t : "light";
     try { localStorage.removeItem("medibot.scale"); } catch (e) { console.warn(e.message); } // la letra grande ya no se guarda: es de cada consulta
   }

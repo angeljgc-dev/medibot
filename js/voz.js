@@ -21,9 +21,10 @@
   function paraVoz(t) {
     return String(t || "")
       .replace(/_{2,}/g, " ")
+      .replace(/(\d+(?:[.,]\d+)?)\s*–\s*(\d+(?:[.,]\d+)?)/g, "de $1 a $2") // 105: «80–130» se dice «de 80 a 130»
       .replace(/\s*[—–]\s*/g, ", ")
       .replace(/\s*·\s*/g, ", ")
-      .replace(/\b800\s?911\s?2000\b/g, "ochocientos, novecientos once, dos mil") // criterio 48: agrupado, sin sonar a «9 1 1» ni a «nueve once»
+      .replace(/\b800\s?911\s?2000\b/g, "ochocientos, novecientos once, dos mil") // Agrupado, sin sonar a «9 1 1» ni a «nueve once»
       .replace(/\b911\b/g, "9 1 1")
       .replace(/(\d)\s?°C/g, "$1 grados")
       .replace(/(\d)\s?%/g, "$1 por ciento")
@@ -146,7 +147,7 @@
     textoDialogo(dlg) {
       const cuerpo = [...dlg.querySelectorAll("h2, p, .telefono")].map(textoDe).map(conPunto).join(" ");
       if (dlg.id === "dlg-borrar") return cuerpo + " Verde: sí, seguir. Rojo: no, borrar todo.";
-      if (dlg.id === "dlg-cerrar") return cuerpo + " Verde: no, seguir. Para cerrar MediBot, toca «Sí, cerrar» en la pantalla."; // criterio 76
+      if (dlg.id === "dlg-cerrar") return cuerpo + " Verde: no, seguir. Para cerrar MediBot, toca «Sí, cerrar» en la pantalla.";
       return cuerpo + " Para cerrar, aprieta el botón verde.";
     },
     leerPantalla() { this.leer(this.textoPantalla()); },
@@ -179,7 +180,7 @@
         if (!el) return;
         el.classList.add("opcion--preguntando");
         const quieto = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-        // Criterio 61: la opción siempre a la vista y el título de su pregunta completo (o fuera de la vista), nunca a la
+        // La opción siempre a la vista y el título de su pregunta completo (o fuera de la vista), nunca a la
         // mitad. Se calcula el desplazamiento de #contenido; el área visible termina donde empieza la botonera.
         const cont = document.getElementById("contenido");
         if (!cont || typeof cont.scrollTo !== "function") { if (el.scrollIntoView) el.scrollIntoView({ block: "nearest" }); return; }
@@ -196,6 +197,13 @@
           else if (o.bottom - tt.top + 2 * M <= alto) y = verAmbos(tt, o);             // cabe del título a la opción
           else if (tt.top < y && tt.bottom > y) y = Math.min(tt.bottom, o.top);        // no cabe: el título queda arriba, fuera
         }
+        // 105: tampoco otro título de la pantalla a la mitad arriba (p. ej. el de «Qué cuidar» a 375 px): si cabe, se ve
+        // entero; si no, queda fuera
+        for (const hx of cont.querySelectorAll("h1, h2, h3")) {
+          if (!hx.getClientRects().length) continue;
+          const t = caja(hx);
+          if (t.top < y && t.bottom > y) y = o.bottom + M <= t.top - M + alto ? t.top - M : t.bottom;
+        }
         y = Math.max(0, Math.min(y, cont.scrollHeight - cont.clientHeight));
         if (Math.abs(y - y0) > 0.5) cont.scrollTo({ top: y, behavior: quieto ? "auto" : "smooth" });
       }
@@ -210,7 +218,7 @@
       return {
         guion: () => { dijoSino = false; return `${intro ? conPunto(intro()) + " " : ""}${pregunta("")}`; },
         /** Con la voz encendida, al tocar una opción se dice lo elegido y la voz sigue con la siguiente pregunta. */
-        // Criterio 42: tocar una opción la elige y detiene la voz (no salta ni marca otra); el siguiente botón físico retoma
+        // Tocar una opción la elige y detiene la voz (no salta ni marca otra); el siguiente botón físico retoma
         tocado(nombre) { pausado = true; marcar(null); if (voz.siempre) voz.leer(nombre ? `Elegiste: ${nombre}.` : ""); },
         accion(id) {
           if (id !== "si" && id !== "no") return false;
@@ -286,7 +294,7 @@
         const k = e.key; const ae = document.activeElement;
         const enTexto = ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName);
         const enControl = ae && ae !== document.body && ae.matches('button, [role="button"], a[href], summary, input, select, textarea');
-        // Criterio 68: Enter siempre hace lo del verde, aunque el foco haya quedado en un botón tocado (Espacio sí lo activa)
+        // Enter siempre hace lo del verde, aunque el foco haya quedado en un botón tocado (Espacio sí lo activa)
         if (k === " " && enControl) return;
         if (k === "Enter" && enControl && (enTexto || ae.closest("dialog, .operador, .lugar-config, [role=button]") || ae.matches("summary, a[href]"))) return;
         if (enTexto) return; // escribiendo: ninguna tecla es un atajo

@@ -168,7 +168,7 @@
         inestable:    { bpm: 75, spo2: 96, temp: 36.6 }
       }[escenario] || {};
       let bpm = E.bpm, spo2 = E.spo2, kg = 58 + Math.random() * 30;
-      this.pesoSimulado = (x) => { kg = x; }; // criterio 71: la pantalla de peso le dice cuánto pesa la persona elegida
+      this.pesoSimulado = (x) => { kg = x; }; // La pantalla de peso le dice cuánto pesa la persona elegida
       const salto = escenario === "inestable" ? 1 : 0;
       let n = 0;
       // Termómetro simulado: sube en exponencial desde la piel (32 °C) hacia el valor del escenario, τ = 6 s, ruido ±0.02 °C
@@ -179,7 +179,7 @@
       this._simColocarTermometro = () => { tempDesde = this.reloj(); };
       this._simTimer = setInterval(() => {
         n++;
-        // Criterio 34: cada valor regresa al del escenario (ruido acotado, sin deriva); el oxígeno nunca pasa de 100
+        // Cada valor regresa al del escenario (ruido acotado, sin deriva); el oxígeno nunca pasa de 100
         bpm += (E.bpm - bpm) * 0.3 + (Math.random() - .5) * 2;
         bpm = Math.min(E.bpm + 4, Math.max(E.bpm - 4, bpm));
         spo2 += (E.spo2 - spo2) * 0.3 + (Math.random() - .5) * .6;

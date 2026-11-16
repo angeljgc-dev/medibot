@@ -51,7 +51,7 @@ def main() -> None:
             def pagina(ancho=1280, alto=800, tema="light", escala="md", init=None):
                 ctx = nav.new_context(viewport={"width": ancho, "height": alto}, color_scheme=tema)
                 ctx.add_init_script("window.__impresiones = 0; window.print = () => { window.__impresiones++; }; try { localStorage.clear(); } catch (e) { console.warn(e.message); }"
-                                    " if (window.speechSynthesis) { speechSynthesis.speak = () => {}; }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))  # criterio 79: de fábrica es claro; el oscuro se fuerza como lo elegiría el operador
+                                    " if (window.speechSynthesis) { speechSynthesis.speak = () => {}; }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))  # De fábrica es claro; el oscuro se fuerza como lo elegiría el operador
                 if init: ctx.add_init_script(init)
                 pg = ctx.new_page()
                 pg.on("console", lambda m: errores.append(m.text) if m.type == "error" else None)
@@ -62,7 +62,7 @@ def main() -> None:
                 return pg
 
             def ir(pg, pantalla, sesion, medidas=None, opciones=None):
-                # terminar() vuelve a letra normal (criterio 49): la letra grande se pone de nuevo, como lo haría la persona
+                # terminar() vuelve a letra normal: la letra grande se pone de nuevo, como lo haría la persona
                 r = pg.evaluate("(c) => { const r = (" + PREPARAR + ")(c); if (c.escala === 'lg') document.querySelector('[data-accion=letra]').click(); return r; }",
                                 {"pantalla": pantalla, "sesion": sesion, "medidas": medidas, "opciones": opciones, "escala": ESCALA.get(id(pg), "md")})
                 pg.wait_for_timeout(80); return r
@@ -192,10 +192,11 @@ def main() -> None:
             h2 = pg.eval_on_selector_all(".bloque:not([hidden]) h2", "els => els.map(e => e.textContent)")
             vis25 = pg.locator(".opcion", has_text="2 a 5").first.bounding_box(); cont = pg.locator(".contenido").bounding_box(); bot = pg.locator(".botonera").bounding_box()
             revisa(len(h2) == len(set(h2)) and vis25 and vis25["y"] >= cont["y"] - 1 and vis25["y"] + vis25["height"] <= bot["y"] + 1, f"la sub-pregunta de edad se ve y sin título repetido: {h2}")
+            # el 67, ajustado por el 81 (2026-11-15): «No / soy hombre» ya no existe; con «Hombre» no se pregunta lactancia
             ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59"})
-            pg.click(".opcion:has-text('No / soy hombre')"); pg.wait_for_timeout(60)
+            pg.locator(".bloque[data-bloque=sexo] .opcion", has_text="Hombre").first.click(); pg.wait_for_timeout(60)
             g = voz(pg)
-            revisa("pecho" not in g, "con «No / soy hombre» la voz no pregunta si das pecho: " + g[-80:])
+            revisa("pecho" not in g and not pg.locator(".bloque[data-bloque=embarazo]:visible").count(), "con «Hombre» ni la pantalla ni la voz preguntan si das pecho: " + g[-80:])
             pg.evaluate("() => window.MediBot.sensores.conectarSim('normal')"); pg.wait_for_timeout(200)
             ir(pg, "bienvenida", NINO); pg.evaluate("() => window.MediBot.sensores.conectarSim('normal')"); pg.wait_for_timeout(200)
             pg.evaluate("() => window.MediBot.ir('mediciones', { medicion: 2 })"); pg.wait_for_timeout(200)
@@ -344,22 +345,22 @@ def main() -> None:
             for _ in range(6):
                 u = ultimo(pg)
                 if "embarazada" in u: break
-                accion(pg, "si" if "18 a 59" in u else "no")
+                accion(pg, "si" if ("18 a 59" in u or "¿Eres mujer?" in u) else "no")  # el 67, ajustado por el 81 (2026-11-15)
             u = accion(pg, "no")
-            revisa("Si eres mujer, ¿estás dando pecho?" in u and sesion(pg)["embarazoOpcion"] is None, f"rojo a «¿estás embarazada?»: pregunta «Si eres mujer, ¿estás dando pecho?» (sin elegir nada): «{u[-70:]}»")
+            revisa("¿Estás dando pecho?" in u and "Si eres mujer" not in u and sesion(pg)["embarazoOpcion"] is None, f"rojo a «¿estás embarazada?»: pregunta «¿Estás dando pecho?» (sin elegir nada): «{u[-70:]}»")
             u2 = accion(pg, "no")
-            elegidas = pg.eval_on_selector_all(".opcion[aria-pressed=true]", "els => els.map(e => e.textContent.trim())")
-            revisa("pecho" not in u2 and any("soy hombre" in e for e in elegidas) and sesion(pg)["embarazoOpcion"] == "no", f"y el rojo ahí deja «No / soy hombre» y no vuelve a preguntar: «{u2[-60:]}»")
-            ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59", "categorias": ["sueno"]})
+            elegidas = pg.eval_on_selector_all(".bloque[data-bloque=embarazo] .opcion[aria-pressed=true]", "els => els.map(e => e.textContent.trim())")
+            revisa("pecho" not in u2 and elegidas == ["No"] and sesion(pg)["embarazoOpcion"] == "no", f"y el rojo ahí deja «No» y no vuelve a preguntar: «{u2[-60:]}» {elegidas}")
+            ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59", "sexo": "mujer", "categorias": ["sueno"]})
             pg.evaluate("() => window.MediBotVoz.leerPantalla()"); pg.wait_for_timeout(100)
             accion(pg, "no"); accion(pg, "si")
             lact = pg.evaluate("() => [window.MediBot.sesion.embarazoOpcion, window.MediBot.recomendar().perfil.lactancia]")
             revisa(lact == ["lactancia", True], f"una mujer que da pecho lo puede decir por voz (rojo a embarazo, verde a «dando pecho»): {lact}")
-            ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59"})
+            ir(pg, "sobreTi", {"paraQuien": "yo", "grupo": "18a59", "sexo": "mujer"})  # el 67, ajustado por el 81 (2026-11-15)
             pg.evaluate("() => window.MediBotVoz.leerPantalla()"); pg.wait_for_timeout(100)
-            pg.click(".opcion:has-text('No / soy hombre')"); pg.wait_for_timeout(80)
+            pg.locator(".bloque[data-bloque=embarazo] .opcion").first.click(); pg.wait_for_timeout(80)
             u1 = accion(pg, "si"); accion(pg, "si")
-            revisa(sesion(pg)["embarazoOpcion"] == "no" and "embarazada" not in u1, f"tocar «No / soy hombre» y luego verde, verde: no vuelve a preguntar ni elige «Sí» ({sesion(pg)['embarazoOpcion']}, «{u1[-60:]}»)")
+            revisa(sesion(pg)["embarazoOpcion"] == "no" and "embarazada" not in u1, f"tocar «No» y luego verde, verde: no vuelve a preguntar ni elige «Sí» ({sesion(pg)['embarazoOpcion']}, «{u1[-60:]}»)")
             pg.close()
             nav.close()
     finally:

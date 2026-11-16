@@ -1,4 +1,4 @@
-// Fase 3 (2026-11-02): «Cuidado con esto» (criterio 16) y «¿A dónde voy?» (criterio 17, L1–L7).
+// Fase 3 (2026-11-02): «Cuidado con esto» y «¿A dónde voy?» (L1–L7).
 // Motor: js/recomendaciones.js → cuidado(); directorio: js/lugares.js. Datos: data/cuidado.js, data/lugares.js,
 // data/clues_oaxaca.js. Las pruebas de comportamiento usan datos armados aquí; las de cobertura, los datos reales.
 import { test, describe } from "node:test";
@@ -23,22 +23,22 @@ const ses = (cambios = {}) => sesionBase(ctx, { grupo: "18a59", embarazoOpcion: 
 const rec = (s, temas) => M.recomendar(s, R.evaluar(s), temas);
 const idDe = (c) => (c ? c.tarjeta.id : null);
 
-describe("A · Cuidado con esto (criterio 16)", () => {
-  test("A1: data/cuidado.js trae 14 tarjetas con versión y fecha, y ya no trae arnica_tomada", () => {
+describe("A · Cuidado con esto", () => {
+  test("data/cuidado.js trae 14 tarjetas con versión y fecha, y ya no trae arnica_tomada", () => {
     const C = D.cuidado;
     assert.ok(C.version && /^\d{4}-\d{2}-\d{2}$/.test(C.fecha), "versión y fecha");
     assert.equal(C.tarjetas.length, 14);
     assert.ok(!C.tarjetas.some(t => t.id === "arnica_tomada"), "árnica quitada (decisión de diseño)");
   });
 
-  test("A2: recomendar() devuelve, por sección elegida, una tarjeta o ninguna (null)", () => {
+  test("recomendar() devuelve, por sección elegida, una tarjeta o ninguna (null)", () => {
     const r = rec(ses(), ["diarrea", "vista"]);
     igual(Object.keys(r.cuidado).sort(), ["diarrea", "vista"]);
     assert.equal(idDe(r.cuidado.diarrea), "ayuno_diarrea");
     assert.equal(r.cuidado.vista, null, "vista no tiene tarjeta");
   });
 
-  test("A3: la más grave que le toca al perfil = la primera del arreglo; nunca 2 iguales en la misma consulta", () => {
+  test("la más grave que le toca al perfil = la primera del arreglo; nunca 2 iguales en la misma consulta", () => {
     const adulto = rec(ses(), ["digestion", "diarrea"]);
     assert.equal(idDe(adulto.cuidado.digestion), "greta_azarcon");
     assert.equal(idDe(adulto.cuidado.diarrea), "ayuno_diarrea");
@@ -52,14 +52,14 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     assert.equal(idDe(alReves.cuidado.digestion), "epazote_te");
   });
 
-  test("A4: respeta `perfiles`: te_agua_bebe solo a quien da pecho o consulta por un niño", () => {
+  test("respeta `perfiles`: te_agua_bebe solo a quien da pecho o consulta por un niño", () => {
     const sinNino = rec(ses(), ["digestion", "ninos"]);
     assert.equal(sinNino.cuidado.ninos, null, "adulto sin niño ni lactancia: greta ya salió y te_agua_bebe no le toca");
     const porNino = rec(ses({ paraQuien: "nino", grupo: "nino", edadNino: "menos2", embarazoOpcion: null }), ["digestion", "ninos"]);
     assert.equal(idDe(porNino.cuidado.ninos), "te_agua_bebe");
   });
 
-  test("A5: perfiles con datos armados: embarazo, mayor60 y vacío = todos", () => {
+  test("perfiles con datos armados: embarazo, mayor60 y vacío = todos", () => {
     const c = cargar(EXTRA);
     const tarjeta = (id, perfiles, secciones = ["s"]) => ({ id, nombre: id, que_es: "q", por_que_cuidado: "p", en_su_lugar: [], texto_en_su_lugar: "t", secciones, perfiles, fuentes: [] });
     c.MediBotData.cuidado = { version: "t", fecha: "2026-11-02", tarjetas: [tarjeta("solo_emb", ["embarazo"]), tarjeta("solo_mayor", ["mayor60"]), tarjeta("todos", [])] };
@@ -71,7 +71,7 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     assert.equal(idDe(Mc.cuidado(["s"], p({ grupo: "18a59" })).s), "todos", "«Prefiero no decir» no cuenta como embarazo");
   });
 
-  test("A6: en nivel rojo no sale ninguna tarjeta (ahí solo va la urgencia)", () => {
+  test("en nivel rojo no sale ninguna tarjeta (ahí solo va la urgencia)", () => {
     const s = ses({ medidas: medidas(72, 84) });
     const r = rec(s, ["digestion", "diarrea"]);
     assert.equal(R.evaluar(s).nivel, "rojo");
@@ -80,7 +80,7 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     igual(M.cuidado(["digestion"], r.perfil), { digestion: null });
   });
 
-  test("A7: «En su lugar» solo con entradas aptas (apta()); el texto curado solo si TODAS son aptas y sin avisos", () => {
+  test("«En su lugar» solo con entradas aptas (apta()); el texto curado solo si TODAS son aptas y sin avisos", () => {
     const c = cargar(EXTRA, { corpus: "fixture" });
     const Mc = c.MediBotRecomendaciones;
     const libre = { embarazo: false, lactancia: false, edad_minima: 0, medicinas: [], condiciones: [] };
@@ -120,7 +120,7 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     assert.match(Mc.textoCuidado(x, "voz"), /Con cuidado\./);
   });
 
-  test("A8: textos de voz y hoja: nombre, por qué, en su lugar y «si ya pasó»", () => {
+  test("textos de voz y hoja: nombre, por qué, en su lugar y «si ya pasó»", () => {
     const r = rec(ses(), ["diarrea"]);
     const x = r.cuidado.diarrea; const t = x.tarjeta;
     const voz = M.textoCuidado(x, "voz");
@@ -132,9 +132,9 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     for (const a of x.alternativas) assert.ok(hoja.includes(a.entrada.nombre), a.entrada.nombre);
     // con «No sé» en medicinas, las alternativas con aviso personal no van en la hoja (sí en pantalla y voz, con su aviso)
     const noSe = rec(ses({ medicinas: ["no_se"] }), ["diarrea"]).cuidado.diarrea;
-    // criterio 64 (ronda 3): el suero oral ya no trae aviso personal con «No sé» (no se retrasa la rehidratación)…
+    // El suero oral ya no trae aviso personal con «No sé» (no se retrasa la rehidratación)…
     assert.ok(!noSe.alternativas.some(a => a.entrada.id === "suero_oral" && a.avisos.some(v => v !== a.entrada.aviso)), "el suero oral, sin aviso personal con «No sé»");
-    // …y la regla de la v0.4 se sigue probando con datos armados (como A7): un suplemento con «No sé» sí trae aviso personal
+    // …y la regla de la v0.4 se sigue probando con datos armados (como la prueba de «En su lugar»): un suplemento con «No sé» sí trae aviso personal
     const c = cargar(EXTRA, { corpus: "fixture" }); const Mc = c.MediBotRecomendaciones;
     const libre = { embarazo: false, lactancia: false, edad_minima: 0, medicinas: [], condiciones: [] };
     const E = (id, tipo) => ({ id, tipo, nombre: "Nombre " + id, temas: ["s"], para: "para " + id, como: "como " + id, ayuda: 2, excluir: { ...libre }, alternativas: [], fuentes: [] });
@@ -150,7 +150,7 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     assert.ok(Mc.textoCuidado(xs, "hoja").includes("Nombre comida"), "la que no trae aviso personal sí va en la hoja");
   });
 
-  test("A10 (revisión): «En su lugar» respeta los tipos que permite la sección (Niños: solo comida y hábitos) y las plantas llevan su pie", () => {
+  test("«En su lugar» respeta los tipos que permite la sección (Niños: solo comida y hábitos) y las plantas llevan su pie", () => {
     const nino = ses({ paraQuien: "nino", grupo: "nino", edadNino: "2a5", embarazoOpcion: null });
     const x = rec(nino, ["ninos"]).cuidado.ninos;
     assert.equal(x.tarjeta.id, "greta_azarcon");
@@ -166,14 +166,14 @@ describe("A · Cuidado con esto (criterio 16)", () => {
     for (const n of plantas) assert.ok(!M.textoCuidado(d, "hoja").includes(n), "en la hoja no van plantas (no cabe su pie): " + n);
   });
 
-  test("A11 (revisión): «nino» en `perfiles` es menor de 12; quien consulta por un adolescente no recibe tarjetas de bebé", () => {
+  test("«nino» en `perfiles` es menor de 12; quien consulta por un adolescente no recibe tarjetas de bebé", () => {
     const teen = ses({ paraQuien: "nino", grupo: "12a17", embarazoOpcion: "no" });
     const r = rec(teen, ["digestion", "ninos"]);
     assert.equal(idDe(r.cuidado.digestion), "greta_azarcon");
     assert.equal(r.cuidado.ninos, null, "te_agua_bebe es para quien da pecho o consulta por un niño menor de 12");
   });
 
-  test("A9: corpus real, matriz de perfiles × secciones: ≤1 por sección, nunca repetida, perfil respetado y alternativas aptas", () => {
+  test("corpus real, matriz de perfiles × secciones: ≤1 por sección, nunca repetida, perfil respetado y alternativas aptas", () => {
     const perfiles = [
       ses(), ses({ grupo: "60mas" }), ses({ embarazo: true, embarazoOpcion: "si" }), ses({ embarazoOpcion: "lactancia", lactancia: true }),
       ses({ paraQuien: "nino", grupo: "nino", edadNino: "menos2", embarazoOpcion: null }), ses({ paraQuien: "nino", grupo: "nino", edadNino: "6a11", embarazoOpcion: null }),
@@ -212,7 +212,7 @@ const LLENA = { nombre_corto: "Centro de Salud de Palomares", como_llegar: "Fren
 const NIVELES = ["verde", "ambar", "rojo"];
 const salidas = (nivel, cfg) => [L.textoPantalla(nivel, cfg), L.textoVoz(nivel, cfg), L.textoHoja(nivel, cfg)];
 
-describe("B · ¿A dónde voy? (criterio 17, L1–L7)", () => {
+describe("B · ¿A dónde voy? (L1–L7)", () => {
   test("L1: sin configuración solo salen 911, 800 911 2000 y «079, opción 1» (en pantalla, voz y hoja)", () => {
     igual(L.nacionales().map(x => x.numero), ["911", "800 911 2000", "079, opción 1"]);
     for (const nivel of NIVELES) {

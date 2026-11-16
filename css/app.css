@@ -150,7 +150,7 @@ button { cursor: pointer; }
 .opcion[aria-pressed="true"] .opcion__marca .pic { visibility: visible; }
 .opcion[aria-expanded="true"] { border-color: var(--borde-fuerte); }
 .opcion[disabled] { opacity: .5; cursor: not-allowed; }
-.opcion--preguntando, .opcion--preguntando[aria-pressed] { outline: 6px dashed var(--foco); outline-offset: 4px; } /* criterio 70: la voz marca con contorno; lo elegido va relleno */
+.opcion--preguntando, .opcion--preguntando[aria-pressed] { outline: 6px dashed var(--foco); outline-offset: 4px; } /* La voz marca con contorno; lo elegido va relleno */
 .opciones--med { grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
 .grupo__bloque { display: grid; gap: var(--e-3); }
 .grupos { display: grid; gap: var(--e-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); align-items: start; }
@@ -424,6 +424,7 @@ details.mas summary { min-height: var(--toque); display: flex; align-items: cent
 .operador__grupo { display: grid; gap: var(--e-3); padding: var(--e-4); background: var(--fondo-lectura); border: var(--borde-1) solid var(--borde-suave); border-top: 4px solid var(--borde-fuerte); border-radius: var(--radio-1); }
 .operador__fila { display: flex; flex-wrap: wrap; gap: var(--e-3); align-items: center; }
 .operador__fila > label { display: inline-flex; gap: var(--e-2); align-items: center; min-height: 48px; }
+.operador input[type="checkbox"] { inline-size: 44px; block-size: 44px; margin: 0; flex: none; } /* 105: casilla de 44 px o más */
 .operador select, .operador input[type="number"] { width: auto; min-width: 8em; min-height: 48px; }
 .operador .btn { font-size: var(--t-operador); }
 .operador__rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--e-4); align-items: start; }
@@ -520,7 +521,7 @@ code.hex { font-family: Consolas, monospace; }
 .app small { font-size: max(var(--t-min), 0.8em); }
 .app .tabla small, .app .medidas__fila small, .app .medicion__valor small { font-size: var(--t-min); }
 
-/* ---------- Ronda de correcciones, criterio 32: en el rojo, el 911 completo sin desplazar (también con letra grande y a 375) ---------- */
+/* ---------- En el rojo, el 911 completo sin desplazar (también con letra grande y a 375) ---------- */
 .caja-911__mas { font-size: var(--t-cuerpo); }
 .es-rojo .cabecera__centro { display: none; }
 .resultado--rojo { gap: var(--e-3); }
@@ -543,7 +544,7 @@ code.hex { font-family: Consolas, monospace; }
   :root[data-scale="lg"] .resultado--rojo .heroe--compacto .heroe__forma .pic { width: 30px; height: 30px; }
 }
 @media (max-width: 640px) { :root[data-scale="lg"] .pregunta h2 { font-size: var(--t-titulo-3); } :root[data-scale="lg"] .pregunta > .pic { width: 64px; height: 64px; } }
-/* Criterio 37: a 375 con letra grande, la cabecera en dos renglones como máximo y la medición con su estado a la vista */
+/* A 375 con letra grande, la cabecera en dos renglones como máximo y la medición con su estado a la vista */
 @media (max-width: 420px) {
   :root[data-scale="lg"] .fantasma--terminar span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
   :root[data-scale="lg"] .cabecera { column-gap: var(--e-2); }
@@ -559,15 +560,15 @@ code.hex { font-family: Consolas, monospace; }
 /* Ronda 3 */
 .medidas__nota { grid-column: 2 / -1; font-size: var(--t-min); }
 .hoja__nota-med { font-size: var(--t-min); }
-@media (max-width: 640px) { .demo { padding: 2px var(--margen-lateral); line-height: 1.2; } } /* criterio 62 */
-@media (max-width: 640px) { /* criterio 62: con letra grande a 375, número, estado y etiquetas caben juntos */
+@media (max-width: 640px) { .demo { padding: 2px var(--margen-lateral); line-height: 1.2; } }
+@media (max-width: 640px) { /* Con letra grande a 375, número, estado y etiquetas caben juntos */
   :root[data-scale="lg"] .medicion__cuerpo { gap: 4px; }
   :root[data-scale="lg"] .medicion__etiquetas, :root[data-scale="lg"] .medicion__etiquetas .nivel, :root[data-scale="lg"] .medicion__estado { font-size: 21px; }
   :root[data-scale="lg"] .medicion__n { display: none; }
 }
 @media (max-width: 640px) { :root[data-scale="lg"] .medicion__etiquetas { gap: 2px; line-height: 1.15; } :root[data-scale="lg"] .medicion__estado { line-height: 1.2; } :root[data-scale="lg"] .medicion { padding: var(--e-3); } }
 
-/* ---------- Criterio 76: «Cerrar MediBot» en el reposo (solo la app de escritorio) ----------
+/* ---------- «Cerrar MediBot» en el reposo (solo la app de escritorio) ----------
    Discreto (fantasma, sin color de semáforo). Fijo en la esquina de abajo a la derecha si ahí el reposo no tiene nada; si
    no, al final del reposo, abajo a la derecha (lo de arriba no se mueve). La barra se llena en 3 s. */
 .cerrar-app__lugar { justify-self: end; display: grid; justify-items: end; gap: var(--e-1); margin-top: var(--e-4); cursor: default; }
@@ -588,3 +589,10 @@ code.hex { font-family: Consolas, monospace; }
 .cerrar-app__lugar--compacto .cerrar-app__texto { max-width: 6.2em; justify-items: center; }
 .fisico--neutro { border-color: var(--borde-fuerte); }
 .fisico--neutro .fisico__tecla { background: var(--fondo-elegido); color: var(--texto); box-shadow: inset 0 -5px 0 var(--tecla-hundida), 0 0 0 2px var(--borde-fuerte); }
+
+/* ---------- Ronda 6: mensaje protector de embarazo en menores. Mismo aspecto que cualquier
+   bloque del resultado: nada de rojo ni de alerta. ---------- */
+.mensaje-menor { border-left: 6px solid var(--borde-fuerte); padding-left: var(--e-4); }
+.mensaje-menor h2 { display: flex; align-items: center; gap: var(--e-3); }
+.mensaje-menor h2 .pic { width: 44px; height: 44px; }
+.mensaje-menor p { max-width: 42em; }

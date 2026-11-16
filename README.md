@@ -11,9 +11,25 @@ MediBot mide pulso, oxígeno, temperatura y peso con sensores conectados a un ES
 
 El proyecto empezó al revisar un "analizador cuántico" que se vende para hacer reportes de salud poniendo la mano en un sensor. Al abrir su base de datos encontramos que los reportes son frases ya escritas que el programa elige según un número, y que el sensor manda siempre los mismos bytes con o sin mano. MediBot es la versión honesta de esa idea: sensores que se pueden comprobar con una pesa y un termómetro. Detalle en [docs/evidencia_qrma.md](docs/evidencia_qrma.md).
 
-## Qué hay de nuevo en la versión 0.5
+## Qué hay de nuevo en la versión 0.6
 
 Lista completa de cambios por versión en [CHANGELOG.md](CHANGELOG.md).
+
+- **Pregunta de sexo, opcional.** En "Sobre ti", después de la edad, MediBot pregunta **Mujer**, **Hombre** o **Prefiero no decir**, cada una con su dibujo y su voz. Si la consulta es por un niño o niña, las opciones dicen "Niña" y "Niño". A los bebés no se les pregunta. Se puede saltar, y no cambia el semáforo ni ningún rango: solo sirve para no dar ideas que no tocan.
+- **Embarazo y lactancia, solo cuando tienen sentido.** Se preguntan solo si la persona eligió **Mujer** o **Prefiero no decir**. Con "Hombre" no aparecen, ni en la pantalla ni en la voz. Ya no existe la opción "No / soy hombre" ni el "Si eres mujer:" en la pregunta. Si alguien cambia el sexo o la edad, se borra la respuesta que ya no aplica.
+- **La edad "6 a 11 años" se partió en "6 a 8" y "9 a 11".** La báscula, las ideas, la voz y la hoja funcionan igual con las dos.
+- **El embarazo se pregunta desde los 9 años.** A una niña de 9 a 11 se le pregunta si está embarazada; lo de dar pecho, desde los 12. De 12 a 17, si contesta que sí, sale una pregunta más: "12 a 14" o "15 a 17". Si no la contesta, MediBot toma el lado que más protege.
+- **Mensaje protector para niñas y adolescentes embarazadas**, en el resultado, en la voz y en la hoja. Hay un texto para la niña y otro para el adulto que la acompaña. No culpa, no pregunta cómo pasó y no usa palabras que señalen el caso. Dice que vaya al centro de salud **hoy** (de 9 a 14 años, y de 15 a 17 si el semáforo ya pide ir hoy o salió rojo) o **esta semana** (de 15 a 17, con verde o amarillo sin prisa). También dice que puede pedir hablar a solas con el personal de salud y da dos números: el **079, opción 1** (gratis, de día y de noche) y el **911**. El color del semáforo no cambia, pero el resto de la pantalla ya no dice lo contrario (nada de "puedes cuidarte en casa").
+- **Ideas seguras en el embarazo, también para menores.** Con embarazo "Sí" o "Prefiero no decir", desde los 9 años se aplican los mismos cuidados que a una adulta (por ejemplo, nada de té de ruda), y salen las señales de alarma del embarazo en "Cuándo ir" y en "Cuidado con esto". Se quita todo lo que da por hecho el parto o la lactancia, y para menores de 12 la sección se llama "Embarazo".
+- **Sugerencias según el sexo**: "Cólicos de la regla" no se le sugiere a quien eligió "Hombre", aunque sigue ahí si la busca.
+- **"¿Está bien esto?" muestra el sexo** que se contestó, para corregirlo si se tocó por error.
+- **La hoja impresa sale siempre en blanco**, aunque el quiosco esté en modo oscuro.
+- **3 pictogramas nuevos**: Mujer, Hombre y Prefiero no decir (78 en total).
+- **Mejoras de redacción**: trato de tú en todas las pantallas. Sobre el alcohol en el embarazo dice "No tomes nada de alcohol", nunca "toma menos". La actividad física de 12 a 17 años trae la cantidad que toca a esa edad. La voz lee los rangos como "de 80 a 130" y dice el mismo nombre que se ve en la pantalla. "¿Por qué MediBot no diagnostica?" se explica más simple. La bienvenida ya no repite avisos, y cada idea muestra solo las fuentes que corresponden a la persona.
+- **Panel del operador**: "Salir de la aplicación" pregunta con el diálogo de MediBot. La casilla de la voz es más grande. El contador del modo evidencia marca 0 hasta que empieza a escuchar. Dice "1 unidad pública", en singular, cuando solo hay una, y ya no pide "apretar el verde" (ahí no hay botonera).
+- Pruebas automáticas: 251 pruebas del motor y del contenido, pruebas en navegador de cada pantalla (también de la pregunta de sexo y del mensaje protector) y la revisión de desborde en 840 vistas.
+
+## Qué hay de nuevo en la versión 0.5
 
 - **Diseño nuevo de toda la interfaz**, pensado para personas mayores, para quien no lee bien y para comunidades indígenas: una idea por pantalla, letra grande y clara (Atkinson Hyperlegible), botonera fija abajo con los mismos colores que los botones físicos (azul = oír, rojo = atrás o no, verde = seguir o sí) y el semáforo con forma y palabra, no solo color.
 - **75 pictogramas propios en estilo "bordado"**: formas planas con contorno, en los colores de los textiles oaxaqueños, con gente de piel morena, rebozo, trenza y sombrero, y comida de aquí (nopal, frijol de la olla, tortilla, quelites, amaranto, guayaba). Se ven igual de bien en claro y en oscuro.
@@ -55,12 +71,17 @@ Todo se puede hacer con los tres botones físicos, con la pantalla táctil o con
 
 1. **Inicio**: "Aprieta el verde o toca la pantalla". Siempre dice "¿Es urgente? Llama al 911".
 2. **Bienvenida y aviso de privacidad**: qué hace MediBot, que es gratis y que no guarda nada.
-3. **Sobre ti**: para quién es (para mí, para un niño o niña, para otra persona), la edad, si está embarazada o da pecho (opcional) y si toma alguna medicina todos los días.
+3. **Sobre ti**, una pregunta a la vez:
+   - **Para quién es**: para mí, para un niño o niña, o para otra persona.
+   - **La edad**. Si es un niño o niña: menos de 2 años, 2 a 5, 6 a 8 o 9 a 11.
+   - **Sexo (opcional)**: Mujer, Hombre o Prefiero no decir ("Niña" o "Niño" si es para un niño). No se pregunta a bebés.
+   - **Embarazo (opcional)**: solo con Mujer o Prefiero no decir, de 12 a 59 años, o en una niña de 9 a 11. Las opciones son "No", "Sí, estoy embarazada", "Estoy dando pecho" (desde los 12) y "Prefiero no decir". De 12 a 17, si dice que sí, se pregunta también "12 a 14" o "15 a 17"; se puede dejar sin contestar.
+   - **Medicinas**: si toma alguna todos los días.
 4. **Señales de alarma**: una pregunta por pantalla, antes de medir. Un "sí" grave lleva directo a la pantalla roja con el 911.
 5. **Mediciones**, una a la vez: pulso y oxígeno (dedo en el oxímetro), temperatura (termómetro en la axila) y peso (subirse a la báscula, pesa solo). Si una lectura sale fuera de rango pide otra y se queda con la peor. Si falta alguna medición, nunca da verde: dice "no pudimos medirte bien".
 6. **¿Qué te gustaría cuidar?**: elige hasta tres temas, o ninguno. MediBot sugiere los que tocan por su caso (por ejemplo embarazo o persona mayor).
 7. **Revisión**: muestra lo que entendió para que la persona lo corrija.
-8. **Resultado**: verde, amarillo o rojo, con lo que hay que hacer y lo que se midió.
+8. **Resultado**: verde, amarillo o rojo, con lo que hay que hacer y lo que se midió. Si es una niña o adolescente embarazada, también sale el mensaje protector, con la prisa que toca ("hoy" o "esta semana"), el 079 opción 1 y el 911.
 9. **Lo que te toca a ti**: las ideas, una por pantalla, con cómo se usa, cuidados y "No lo encuentro" para ver otra opción. Al final, "Cuidado con esto" y cuándo ir al centro de salud.
 10. **Tu hoja de hoy**: se imprime con el botón verde y se borra todo.
 
@@ -77,7 +98,7 @@ Es para quien instala o cuida el quiosco; el público no lo ve.
   - **Verificación de sensores**: tara y calibración de la báscula con una pesa conocida, prueba del termómetro y bitácora.
   - **Simulación** para demostraciones.
   - **Cambiar entre claro y oscuro**.
-  - **Salir de la aplicación**.
+  - **Salir de la aplicación** (pide confirmar con "Sí, cerrar").
 
 ### Cerrar MediBot
 
@@ -166,7 +187,7 @@ python tools/verify.py
 - `tools/lint_contenido.py`: vocabulario que COFEPRIS no permite, fuentes completas, leyendas, pictogramas y colores.
 - `node --test tests/*.test.mjs`: reglas del semáforo, recomendaciones, voz, temperatura, pictogramas.
 - `tools/e2e_*.py`: cada pantalla en el navegador, con lo que se ve y lo que se oye.
-- `tools/check_desborde.py`: que nada se salga ni se descoloque en 768 vistas.
+- `tools/check_desborde.py`: que nada se salga ni se descoloque en 840 vistas.
 
 Termina con `VERIFY: OK` si todo pasa.
 
@@ -199,6 +220,7 @@ Lo que todavía no está comprobado, dicho tal cual:
 
 - El firmware está escrito pero falta probarlo en la placa con los sensores reales, armar la báscula y calibrarla. Hasta ahora la app se probó con el simulador.
 - Las reglas y los textos nuevos de la versión 0.5 (preguntas de alarma para niños, trato para consultas de niños, textos cortos del motivo) necesitan revisión de personal de salud antes de usarse con personas.
+- Lo mismo para la versión 0.6: el mensaje protector para niñas y adolescentes embarazadas no lo ha firmado personal de salud. Falta su firma para decidir si el semáforo de una niña o adolescente embarazada debe subir a amarillo con prisa "hoy". Mientras tanto el color no cambia. La propuesta, con sus fuentes (NOM-007, NOM-046, OMS), está en [docs/reglas_orientacion.md](docs/reglas_orientacion.md).
 - Falta probar los pictogramas con personas de la comunidad, la impresora real y la toma de temperatura con varias personas.
 - Falta una pregunta de alarma propia del embarazo con fuente oficial y una tabla de composición de alimentos de Oaxaca para poder dar cantidades.
 - Traducción a zapoteco y mixe.

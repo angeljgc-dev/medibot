@@ -31,7 +31,8 @@
   const ETIQUETA_GRUPO_VOZ = { bebe: "menos de 3 meses", nino: "de 3 meses a 11 años", "12a17": "de 12 a 17 años", "18a59": "de 18 a 59 años", "60mas": "60 años o más" };
   const GRUPOS_POR_PERSONA = { yo: ["12a17", "18a59", "60mas"], nino: ["bebe", "nino", "12a17"], otra: null };
   // Peso creíble para la edad, como validación de entrada (docs/reglas_orientacion.md §«Peso de la báscula»)
-  const RANGO_PESO = { menos2: [2, 20], "2a5": [8, 30], "6a11": [14, 80], "12a17": [25, 150], "18a59": [30, 250], "60mas": [30, 250], bebe: [1, 10] };
+  // Ronda 6 (82): «6 a 11» se partió en «6 a 8» y «9 a 11» con el mismo rango creíble; «6a11» queda por las sesiones de antes
+  const RANGO_PESO = { menos2: [2, 20], "2a5": [8, 30], "6a8": [14, 80], "9a11": [14, 80], "6a11": [14, 80], "12a17": [25, 150], "18a59": [30, 250], "60mas": [30, 250], bebe: [1, 10] };
 
   /* ---------- Piezas comunes ---------- */
   const vista = (clase, ...hijos) => h("section.vista" + (clase || ""), ...hijos);
@@ -62,14 +63,14 @@
   const CORTO = { verde: "Esperado", ambar: "Revisar", rojo: "Urgente" };
   function medTag(fila, corto) {
     const clasificada = fila.estado !== "invalida" && fila.clasificado && fila.nivel;
-    if (corto) return nivelTag(clasificada ? fila.nivel : null, fila.estado === "invalida" ? "No válida" : clasificada ? CORTO[fila.nivel] + (fila.prisa === "hoy" ? " hoy" : "") : "Sin semáforo"); // criterio 63
+    if (corto) return nivelTag(clasificada ? fila.nivel : null, fila.estado === "invalida" ? "No válida" : clasificada ? CORTO[fila.nivel] + (fila.prisa === "hoy" ? " hoy" : "") : "Sin semáforo");
     return nivelTag(clasificada ? fila.nivel : null, textoMed(fila));
   }
   /** En voz, la misma etiqueta («Pulso 79: dentro de lo esperado»); sin clasificar, «sin color: lo revisa tu centro de salud». */
   function vozMed(nombre, valorTxt, fila) {
     if (fila.estado === "invalida") return `${nombre}: no válida.`;
     const sinColor = !fila.clasificado || !fila.nivel;
-    // Criterio 39: sin «sin color» en la voz; en niñas y niños el valor se compara con el rango de su edad
+    // Sin «sin color» en la voz; en niñas y niños el valor se compara con el rango de su edad
     const t = sinColor ? "lo comparan en el centro de salud con el rango de su edad" : textoMed(fila).replace(/^./, c => c.toLowerCase());
     return `${nombre} ${valorTxt}: ${t}.`;
   }
@@ -102,36 +103,76 @@
   function opcionBtn(nombre, { dibujo, sub, pulsado, onclick, clase, marca = true }) {
     const b = h("button.opcion" + (clase || ""), { type: "button", "aria-pressed": String(!!pulsado), onclick: (e) => {
       onclick(e);
-      const rec = recActivo; if (e && e.isTrusted && rec && typeof rec.tocado === "function" && b.getAttribute("aria-pressed") === "true") rec.tocado(nombre);
+      const rec = recActivo; if (e && e.isTrusted && rec && typeof rec.tocado === "function" && b.getAttribute("aria-pressed") === "true") rec.tocado((b.querySelector(".opcion__texto b") || {}).textContent || nombre); // El nombre que se ve
     } },
       dibujo ? pic(dibujo) : null,
       h("span.opcion__texto", h("b", nombre), sub ? h("small", sub) : null),
       marca ? h("span.opcion__marca", { "aria-hidden": "true" }, pic("p-si")) : null);
     return b;
   }
+  /** Cambia el nombre visible de una opción (p. ej. «Mujer» → «Niña» si la consulta pasa a ser por un niño). */
+  function renombrar(b, nombre) { const t = b.querySelector(".opcion__texto b"); if (t && t.textContent !== nombre) t.textContent = nombre; }
   /** Botones Sí / No dentro de una pregunta (forma y color fijos, como los botones físicos). */
   function sinoBtns(valor, alElegir) {
     const si = h("button.sn__si", { type: "button", "data-v": "si", "aria-pressed": String(valor === true), onclick: () => alElegir(true) }, pic("p-si"), "Sí");
     const no = h("button.sn__no", { type: "button", "data-v": "no", "aria-pressed": String(valor === false), onclick: () => alElegir(false) }, pic("p-no"), "No");
     return { si, no };
   }
-  /** Acciones de «Qué hacer ahora» según el nivel y si la persona sigue un control de azúcar o presión. */
-  function accionesPara(T, r, p) {
+  /* Con el mensaje protector (85a/85b), nada de lo que dice el nivel contradice «ve hoy al centro de salud».
+     Es solo presentación: el nivel y el color del semáforo no cambian (js/reglas.js no se toca). */
+  const CONTRADICE_MENOR = /puedes cuidarte en casa|en los próximos días|en los próximos 2 o 3 días|en la siguiente revisión|al menos una vez al año/i;
+  const sinContradecir = (x) => String(x == null ? "" : x).split(/(?<=[.!?])\s+/).filter(f => !CONTRADICE_MENOR.test(f)).join(" ");
+  /** «Por el embarazo, ve hoy al centro de salud» («esta semana» de 15 a 17; «llévala» si consulta otra persona), o null. */
+  function accionMenor(T, s, p, r) {
+    const M = Rec(); const caso = M && M.embarazoAdolescente ? M.embarazoAdolescente(p) : null;
+    const A = T.embarazo_menor && T.embarazo_menor.accion;
+    if (!caso || !A || r.nivel === "rojo") return null;
+    const cuando = caso === "15a17" && !prisaHoy(r) ? "esta semana" : "hoy"; // 15 a 17: lo mismo que su mensaje (85b); «hoy» si las mediciones lo piden
+    return (persona(s).yo ? A.yo : A.otra).replace("{cuando}", cuando);
+  }
+  /** Nombre y frase del nivel; con el mensaje protector, sin «puedes cuidarte en casa» ni «en los próximos días». */
+  function textoNivel(T, r, accion) {
+    const N = T.niveles[r.nivel]; const hoy = r.nivel === "ambar" && r.prisa === "hoy";
+    const frase = hoy ? N.frase_hoy : N.frase;
+    if (!accion) return { nombre: N.nombre, frase };
+    return { nombre: CONTRADICE_MENOR.test(N.nombre) ? N.nombre.split(":")[0] : N.nombre, frase: r.nivel === "verde" ? `${sinContradecir(frase)} ${accion}`.trim() : accion };
+  }
+  /** Acciones de «Qué hacer ahora» según el nivel y si la persona sigue un control de azúcar o presión. Con `accion`
+     , esa va primero y se quitan las que la contradicen. */
+  function accionesPara(T, r, p, accion) {
     const N = T.niveles[r.nivel];
     const hoy = r.nivel === "ambar" && r.prisa === "hoy";
     let acciones = (hoy ? N.acciones_hoy : N.acciones).slice();
     const cron = p && (p.cronico.azucar && p.cronico.presion ? T.cronico.ambos : p.cronico.azucar ? T.cronico.azucar : p.cronico.presion ? T.cronico.presion : null);
     if (cron && r.nivel === "verde") acciones = acciones.map(a => /una vez al año/.test(a) ? cron : a);
     else if (cron && r.nivel === "ambar") acciones.splice(2, 0, cron);
+    if (accion) acciones = [accion, ...acciones.filter(a => !CONTRADICE_MENOR.test(a) && !/^Acude /.test(a))];
     return acciones.map(tratoPara(T, p));
   }
-  /** Criterio 59: en la consulta para un niño, el texto le habla al adulto (data/textos.js, trato_nino). */
+  /** En la consulta para un niño, el texto le habla al adulto (data/textos.js, trato_nino). */
   function tratoPara(T, p) {
     const pares = p && (p.persona === "nino" || p.grupo === "nino") && Array.isArray(T.trato_nino) ? T.trato_nino : [];
     return (x) => pares.reduce((txt, [a, b]) => txt.split(a).join(b), String(x == null ? "" : x));
   }
+  /** El mensaje protector que toca (versión de la niña o del adulto; 15 a 17 con
+      «esta semana»), o null. Sustituye a la línea del control prenatal (embarazo.linea); el semáforo no cambia.
+      94 (decisión de diseño, 2026-11-15): de 15 a 17 siempre el texto del 85b, con la prisa del semáforo: «hoy»
+      (`15a17_hoy`) si ya pide ir hoy (ámbar con prisa «hoy») o es rojo; si no, «pronto, de preferencia esta semana». */
+  const prisaHoy = (r) => !!r && r.nivel === "ambar" && r.prisa === "hoy";
+  function mensajeMenor(T, s, p, r) {
+    const M = Rec(); const caso = M && M.embarazoAdolescente ? M.embarazoAdolescente(p) : null;
+    if (!caso || !T.embarazo_menor) return null;
+    const quien = persona(s).yo ? "nina" : "adulto";
+    if (caso !== "15a17") return T.embarazo_menor[quien];
+    const hoy = prisaHoy(r) || (!!r && r.nivel === "rojo");
+    return (hoy && T.embarazo_menor["15a17_hoy"] ? T.embarazo_menor["15a17_hoy"] : T.embarazo_menor["15a17"])[quien];
+  }
+  function mensajeMenorEl(m) {
+    return h("section.bloque.mensaje-menor", { role: "note", "data-mensaje": "embarazo-menor" }, h("h2", pic("p-centro-salud"), m.titulo), m.parrafos.map(x => h("p", x)));
+  }
   function lineaEmbarazo(T, s, p) {
     if (!p.embarazo) return null;
+    if (mensajeMenor(T, s, p)) return null; // 85a/85b: el mensaje protector la sustituye
     const yo = persona(s).yo;
     if (p.senales.fiebre) return yo ? T.embarazo.linea_fiebre : T.embarazo.linea_fiebre_otra;
     return yo ? T.embarazo.linea : T.embarazo.linea_otra;
@@ -142,13 +183,13 @@
     if (!f || f.valor >= 95 || f.valor < 90) return [];
     return [{ texto: `Oxígeno en la sangre: ${fmt(f.valor, 0)} %. En niñas y niños lo esperado es 95 % o más. Que lo revise personal de salud.`, fuente: f.fuente }];
   }
-  /** El porqué del rojo en una línea corta (criterio 32): la frase corta de la pregunta, o la medición sin el rango. */
+  /** El porqué del rojo en una línea corta: la frase corta de la pregunta, o la medición sin el rango. */
   function porqueCorto(T, motivos, N) {
     const m = motivos[0]; if (!m) return N.frase;
     if (m.pregunta) return (T.motivo_corto && T.motivo_corto[m.pregunta.id]) || "Dijiste que sí a una señal de urgencia";
     return String(m.texto).split(" (")[0];
   }
-  /** Texto de una pregunta de alarma para quien contesta por otra persona (criterio 39): se le habla al adulto. */
+  /** Texto de una pregunta de alarma para quien contesta por otra persona: se le habla al adulto. */
   function textoAlarma(T, p, q) {
     const v = q === "nino" ? (T.alarma_nino_textos || {})[p.id] : null;
     if (q === "nino" && v) return v;
@@ -172,14 +213,14 @@
         // el 911 siempre a la vista: si alguien borra un resultado rojo sin querer, el número sigue aquí
         h("p.reposo__urgencia", pic("p-llamar-911"), h("span", "¿Es urgente? Llama al ", h("b.num", "911"), ".")),
         h("div.consola", { "aria-hidden": "true" }, h("div.consola__teclas", h("span.consola__azul"), h("span.consola__rojo"), h("span.consola__verde")), h("p", "Aprieta el verde o toca la pantalla"))),
-      window.medibotEscritorio ? cerrarApp(ctx) : null); // criterio 76: solo en la app de escritorio
-    nodo._alMostrar = () => colocarCerrarApp(); // criterio 76
+      window.medibotEscritorio ? cerrarApp(ctx) : null); // Solo en la app de escritorio
+    nodo._alMostrar = () => colocarCerrarApp();
     // Cualquier botón que no sea el verde dice cómo empezar
     nodo._voz = { guion: () => V.reposo, accion(id) { if (id === "si" || id === "siguiente") { ctx.ir(); return true; } hablar(V.reposo); return true; } };
     return nodo;
   }
 
-  /* ---------- Criterio 76: «Cerrar MediBot» en el reposo (mantenimiento de la PC; solo la app de escritorio) ----------
+  /* ---------- «Cerrar MediBot» en el reposo (mantenimiento de la PC; solo la app de escritorio) ----------
      Discreto, abajo a la derecha, fuera de la voz (.no-voz). Para que un niño no lo cierre sin querer: mantener apretado
      3 s (la barra se llena) y luego confirmar en un diálogo (js/app.js, pedirCerrarApp). Un toque corto no hace nada más
      que decir «Mantén apretado para cerrar». El clic nunca llega al reposo (que empieza la consulta); el teclado sí: con
@@ -270,45 +311,76 @@
     return nodo;
   }
 
-  /* ---------- 2. Sobre ti: para quién, edad y embarazo. El peso y la estatura van en «Te medimos» (criterio 41) ---------- */
+  /* ---------- 2. Sobre ti: para quién, edad y embarazo. El peso y la estatura van en «Te medimos» ---------- */
   function sobreTi(ctx) {
     const s = ctx.sesion; const R = ctx.datos.rangos; const T = ctx.datos.textos; const PI = PIC();
     const gruposVisibles = () => { const ids = GRUPOS_POR_PERSONA[s.paraQuien || "otra"]; return ids ? R.grupos.filter(g => ids.includes(g.id)) : R.grupos; };
 
     const pqBtns = T.para_quien.opciones.map(o => opcionBtn(o.nombre, { dibujo: PI.para_quien[o.id], pulsado: s.paraQuien === o.id, onclick: () => {
-      // Criterio 41: si cambia la persona, el peso y la estatura de la otra ya no sirven
-      if (s.paraQuien && s.paraQuien !== o.id) { s.peso = { valor: null, origen: null }; s.talla = { valor: null, origen: null }; s.alarma = {}; } // criterio 54
+      // Si cambia la persona, el peso y la estatura de la otra ya no sirven
+      if (s.paraQuien && s.paraQuien !== o.id) { s.peso = { valor: null, origen: null }; s.talla = { valor: null, origen: null }; s.alarma = {}; s.sexo = null; } // 54; 81: otra persona, otro sexo
       s.paraQuien = o.id;
       if (s.grupo && !gruposVisibles().some(g => g.id === s.grupo)) { s.grupo = null; s.edadNino = null; }
       refrescar();
     } }));
     const grupoBtns = R.grupos.map(g => opcionBtn(g.nombre, { dibujo: PI.edades[g.id], sub: g.sub, pulsado: s.grupo === g.id, onclick: () => { s.grupo = g.id; if (g.id !== "nino") s.edadNino = null; refrescar(); } }));
     const ninoBtns = T.edad_nino.opciones.map(o => opcionBtn(o.nombre, { pulsado: s.edadNino === o.id, onclick: () => { s.edadNino = o.id; refrescar(); } }));
-    const embBtns = T.embarazo.opciones.map(o => opcionBtn(o.nombre, { dibujo: PI.embarazo[o.id], pulsado: s.embarazoOpcion === o.id, onclick: () => {
+    // «Mujer / Hombre / Prefiero no decir», después de la edad (y de la sub-edad del niño); opcional
+    const S = T.sexo;
+    const P0 = persona(s);
+    const textoDe = (o, P) => (P.q === "nino" && o.nombre_nino) || (!P.yo && o.nombre_otra) || o.nombre;
+    const vozDe = (o, P) => (P.q === "nino" ? o.voz_nino : P.yo ? o.voz : o.voz_otra) || o.voz;
+    const sexoBtns = S.opciones.map(o => opcionBtn(textoDe(o, P0), { dibujo: (PI.sexo || {})[o.id], pulsado: s.sexo === o.id, onclick: () => { s.sexo = o.id; refrescar(); } }));
+    const embBtns = T.embarazo.opciones.map(o => opcionBtn(textoDe(o, P0), { dibujo: PI.embarazo[o.id], pulsado: s.embarazoOpcion === o.id, onclick: () => {
       s.embarazoOpcion = o.id; s.embarazoRespondido = true; s.embarazo = o.id === "si" ? true : o.id === "no_decir" ? null : false; s.lactancia = o.id === "lactancia"; refrescar();
     } }));
+    // El embarazo solo con «Mujer» o «Prefiero no decir», de 12 a 59 años o una niña de 9 a 11; la
+    // lactancia, desde los 12
+    const conEdad = () => !!s.grupo && s.grupo !== "bebe" && (s.grupo !== "nino" || !!s.edadNino);
+    const nina9 = () => s.grupo === "nino" && s.edadNino === "9a11";
+    const preguntaEmbarazo = () => (s.sexo === "mujer" || s.sexo === "no_decir") && (s.grupo === "12a17" || s.grupo === "18a59" || nina9());
+    const preguntaLactancia = () => preguntaEmbarazo() && !nina9();
 
-    const tituloEdad = h("h2"); const tituloEmb = h("h2");
+    // En 12 a 17 con embarazo «Sí», «12 a 14» o «15 a 17» (para el mensaje de 85a o 85b; sin contestar, 85a)
+    const EA = T.edad_adolescente;
+    const adolBtns = EA.opciones.map(o => opcionBtn(o.nombre, { pulsado: s.edadAdol === o.id, onclick: () => { s.edadAdol = o.id; refrescar(); } }));
+    const preguntaAdol = () => s.grupo === "12a17" && s.embarazoOpcion === "si" && preguntaEmbarazo();
+    const adolCard = h("div.bloque", { hidden: true, "data-bloque": "edad-adolescente" }, h("h2", EA.titulo), h("div.opciones", { role: "group", "aria-label": EA.titulo }, adolBtns));
+
+    const tituloEdad = h("h2"); const tituloEmb = h("h2"); const tituloSexo = h("h2"); const ayudaSexo = h("p.ayuda");
     const ninoCard = h("div.bloque", { hidden: true }, h("h2", "¿De qué edad, más o menos?"), h("div.opciones", { role: "group", "aria-label": T.edad_nino.titulo }, ninoBtns));
-    const embCard = h("div.bloque", { hidden: true }, tituloEmb, h("p.ayuda", T.embarazo.ayuda), h("div.opciones", { role: "group", "aria-label": T.embarazo.pregunta }, embBtns));
+    const sexoCard = h("div.bloque", { hidden: true, "data-bloque": "sexo" }, tituloSexo, ayudaSexo, h("div.opciones", { role: "group", "aria-label": S.titulo }, sexoBtns));
+    const ayudaEmb = h("p.ayuda", T.embarazo.ayuda);
+    const embCard = h("div.bloque", { hidden: true, "data-bloque": "embarazo" }, tituloEmb, ayudaEmb, h("div.opciones", { role: "group", "aria-label": T.embarazo.pregunta }, embBtns));
 
     const verde = () => SIGUE("Siguiente", () => ctx.ir(s.grupo === "bebe" ? "bebe" : undefined), { rotulo: "verde largo", deshabilitado: !s.grupo || (s.grupo === "nino" && !s.edadNino) });
     const botones = () => ({ azul: AZUL(), rojo: ATRAS(ctx), verde: verde() });
     let montado = false;
     function refrescar() {
       const P = persona(s);
-      embCard.hidden = !(s.grupo === "12a17" || s.grupo === "18a59");
-      if (embCard.hidden) { s.embarazo = null; s.embarazoOpcion = null; s.embarazoRespondido = false; s.lactancia = false; }
+      sexoCard.hidden = !conEdad();
+      if (s.grupo === "bebe") s.sexo = null; // Cambiar de edad conserva el sexo, salvo a bebé
+      embCard.hidden = !preguntaEmbarazo();
+      // cambiar el sexo o la edad borra la respuesta que ya no aplica
+      if (embCard.hidden || (s.embarazoOpcion === "lactancia" && !preguntaLactancia())) { s.embarazo = null; s.embarazoOpcion = null; s.embarazoRespondido = false; s.lactancia = false; }
+      adolCard.hidden = !preguntaAdol();
+      if (adolCard.hidden) s.edadAdol = null;
+      adolBtns.forEach((b, i) => b.setAttribute("aria-pressed", String(s.edadAdol === EA.opciones[i].id)));
+      sexoBtns.forEach((b, i) => { b.setAttribute("aria-pressed", String(s.sexo === S.opciones[i].id)); renombrar(b, textoDe(S.opciones[i], P)); });
+      embBtns.forEach((b, i) => { const o = T.embarazo.opciones[i]; b.hidden = o.id === "lactancia" && !preguntaLactancia(); renombrar(b, textoDe(o, P)); });
+      tituloSexo.replaceChildren(P.q === "nino" ? S.titulo_nino : P.yo ? S.titulo : S.titulo_otra, " ", h("small.ayuda", "(opcional)"));
+      ayudaSexo.textContent = P.yo ? S.ayuda : S.ayuda_otra;
+      ayudaEmb.textContent = P.q === "nino" ? T.embarazo.ayuda_nino : P.yo ? T.embarazo.ayuda : T.embarazo.ayuda_otra;
       pqBtns.forEach((b, i) => b.setAttribute("aria-pressed", String(s.paraQuien === T.para_quien.opciones[i].id)));
       const vis = gruposVisibles().map(g => g.id);
       grupoBtns.forEach((b, i) => { b.setAttribute("aria-pressed", String(s.grupo === R.grupos[i].id)); b.hidden = !vis.includes(R.grupos[i].id); });
       ninoBtns.forEach((b, i) => b.setAttribute("aria-pressed", String(s.edadNino === T.edad_nino.opciones[i].id)));
       embBtns.forEach((b, i) => b.setAttribute("aria-pressed", String(s.embarazoOpcion === T.embarazo.opciones[i].id)));
       tituloEdad.textContent = P.q === "nino" ? "¿Qué edad tiene el niño o la niña?" : P.q === "otra" ? "¿Cuántos años tiene la persona?" : "¿Cuántos años tienes?";
-      tituloEmb.replaceChildren(P.yo ? T.embarazo.pregunta : T.embarazo.pregunta_otra, " ", h("small.ayuda", "(opcional)"));
+      tituloEmb.replaceChildren(P.q === "nino" ? T.embarazo.pregunta_nino : P.yo ? T.embarazo.pregunta : T.embarazo.pregunta_otra, " ", h("small.ayuda", "(opcional)"));
       const abrioNino = ninoCard.hidden && s.grupo === "nino";
       ninoCard.hidden = s.grupo !== "nino";
-      if (montado && abrioNino) ninoCard.scrollIntoView({ block: "nearest" }); // criterio 60
+      if (montado && abrioNino) ninoCard.scrollIntoView({ block: "nearest" });
       if (montado) ctx.botonera(botones());
     }
     refrescar();
@@ -317,7 +389,7 @@
       titulo("Cuéntame un poco de ti", "Solo lo necesario para comparar las mediciones con el rango de la edad. No pedimos tu nombre."),
       h("div.bloque", h("h2", T.para_quien.titulo), h("div.opciones", { role: "group", "aria-label": T.para_quien.titulo }, pqBtns)),
       h("div.bloque", tituloEdad, h("div.opciones", { role: "group", "aria-label": "Grupo de edad" }, grupoBtns)),
-      ninoCard, embCard);
+      ninoCard, sexoCard, embCard, adolCard);
     nodo._titulo = "Sobre ti";
     nodo._botones = botones();
     nodo._alMostrar = () => { montado = true; };
@@ -331,15 +403,21 @@
           { opciones: grupoBtns.map((el, i) => ({ el, voz: P.tercera("¿Tienes " + ETIQUETA_GRUPO_VOZ[R.grupos[i].id] + "?"), nombre: R.grupos[i].nombre })) }
         ];
         if (s.grupo === "nino") pasos.push({ opciones: ninoBtns.map((el, i) => ({ el, voz: T.edad_nino.opciones[i].voz, nombre: T.edad_nino.opciones[i].nombre })) });
+        // Sexo, opcional: si dice que no a las tres, sigue sin contestar
+        if (!sexoCard.hidden) pasos.push({ opciones: S.opciones.map((o, i) => ({ el: sexoBtns[i], voz: vozDe(o, P), nombre: textoDe(o, P), alNo: i === S.opciones.length - 1 ? () => {} : undefined })) });
         if (!embCard.hidden) {
           const ix = (id) => T.embarazo.opciones.findIndex(o => o.id === id);
           const [si, no, lac] = [ix("si"), ix("no"), ix("lactancia")];
-          // Criterio 43: la voz dice lo mismo que la pantalla, «Si eres mujer: …». El paso cuenta como contestado si se tocó
-          // cualquier opción (criterio 67: tras tocar «No / soy hombre», el verde no vuelve a preguntar ni elige «Sí»).
-          pasos.push({ respondido: () => !!s.embarazoOpcion, opciones: [{ el: embBtns[si], voz: P.tercera(T.embarazo.opciones[si].voz), nombre: "embarazo sí", alNo: () => {} }] });
-          // Un rojo a «¿estás embarazada?» no dice si da pecho: se pregunta «Si eres mujer, ¿estás dando pecho?» (una mujer que da
-          // pecho debe poder decirlo); el rojo ahí deja «No / soy hombre». Con «No / soy hombre» tocado no se pregunta (67).
-          if (s.embarazoOpcion !== "si" && s.embarazoOpcion !== "no" && s.embarazoOpcion !== "no_decir") pasos.push({ siempre: true, opciones: [{ el: embBtns[lac], voz: P.tercera(T.embarazo.opciones[lac].voz_tras_no || T.embarazo.opciones[lac].voz), nombre: "dando pecho", alNo: () => { if (s.embarazoOpcion !== "lactancia") embBtns[no].click(); } }] });
+          const opc = (k) => T.embarazo.opciones[k];
+          // El paso cuenta como contestado si se tocó cualquier opción. Un rojo a «¿estás embarazada?» no dice
+          // si da pecho: se pregunta, y el rojo ahí deja «No»; sin pregunta de pecho (niña de 9 a 11), el rojo deja «No» ya.
+          // SOLO con sexo «Prefiero no decir», al final viene «¿Prefieres no
+          // decirlo?» y el rojo ahí deja «No». Con «Mujer», la cadena del 67 no cambia.
+          const nd = ix("no_decir"); const ofrece = () => s.sexo === "no_decir";
+          pasos.push({ respondido: () => !!s.embarazoOpcion, opciones: [{ el: embBtns[si], voz: vozDe(opc(si), P), nombre: textoDe(opc(si), P), alNo: () => { if (!ofrece() && !preguntaLactancia() && !s.embarazoOpcion) embBtns[no].click(); } }] });
+          if (!adolCard.hidden) pasos.push({ opciones: EA.opciones.map((o, i) => ({ el: adolBtns[i], voz: P.yo ? o.voz : o.voz_otra, nombre: o.nombre, alNo: i === EA.opciones.length - 1 ? () => {} : undefined })) });
+          if (preguntaLactancia() && !["si", "no", "no_decir"].includes(s.embarazoOpcion)) pasos.push({ siempre: true, opciones: [{ el: embBtns[lac], voz: vozDe(opc(lac), P), nombre: textoDe(opc(lac), P), alNo: () => { if (!ofrece() && s.embarazoOpcion !== "lactancia") embBtns[no].click(); } }] });
+          if (ofrece() && !s.embarazoOpcion) pasos.push({ siempre: true, opciones: [{ el: embBtns[nd], voz: vozDe(opc(nd), P), nombre: textoDe(opc(nd), P), alNo: () => { if (!s.embarazoOpcion) embBtns[no].click(); } }] });
         }
         return pasos;
       },
@@ -474,7 +552,7 @@
     let dijoSino = false;
     const tx = (p) => textoAlarma(ctx.datos.textos, p, P.q);
     const textoPregunta = (k) => { const p = preguntas[k]; const sn = dijoSino ? "Verde sí, rojo no." : SINO; dijoSino = true; return `Pregunta ${k + 1} de ${n}. ${tx(p).texto} ${tx(p).ayuda || ""} ${sn}`; };
-    // Criterio 54: si se llegó aquí desde «¿Está bien esto?» (preguntas nuevas tras cambiar a la persona), el verde regresa a revisar
+    // Si se llegó aquí desde «¿Está bien esto?» (preguntas nuevas tras cambiar a la persona), el verde regresa a revisar
     const aRevisar = ctx.volverA === "confirmar";
     const siguienteTexto = () => i < n ? textoPregunta(i) : `Ya respondiste todas las preguntas. Aprieta el botón verde para ${aRevisar ? "volver a revisar tus datos" : "continuar a medir"}.`;
     const textoUrgencia = () => { const p = preguntas.find(x => x.id === ultimaRoja) || preguntas.find(x => x.nivel === "rojo" && s.alarma[x.id] === true); return `Dijiste que sí a: ${p ? corta(p) : "una señal de urgencia"}. Verde: ver qué hacer ahora. Rojo: me equivoqué, era no.`; };
@@ -494,7 +572,7 @@
           h("p.pregunta__ayuda", si.length ? "Dijiste que sí a: " + si.map(corta).join("; ") + "." : "Dijiste que no a todas."))));
       }
       ctx.botonera(botones());
-      if (montadoA && !hayRojo()) { const q = cuerpo.querySelector("h2"); if (q) q.scrollIntoView({ block: "nearest" }); } // criterio 37
+      if (montadoA && !hayRojo()) { const q = cuerpo.querySelector("h2"); if (q) q.scrollIntoView({ block: "nearest" }); }
     }
     let montadoA = false;
     const botones = () => hayRojo()
@@ -553,7 +631,7 @@
     return nodo;
   }
 
-  /* ---------- 4. Mediciones: una a la vez (§6.9): pulso y oxígeno, temperatura y peso (criterio 41: la báscula solo pesa aquí) ---------- */
+  /* ---------- 4. Mediciones: una a la vez (§6.9): pulso y oxígeno, temperatura y peso (la báscula solo pesa aquí) ---------- */
   function mediciones(ctx) {
     const s = ctx.sesion; const P = persona(s);
     const PREG = [P.yo ? "¿Medimos tu pulso y tu oxígeno? Pon el dedo índice en el sensor, sin apretar." : "¿Medimos el pulso y el oxígeno? Pon el dedo índice en el sensor, sin apretar.",
@@ -563,21 +641,21 @@
     const avisoPendiente = h("p.aviso-incompleto", { role: "alert", hidden: true }, pic("p-alerta"), h("span", "Hay una medición fuera de lo esperado que falta confirmar. Mídela otra vez o sáltala con el rojo."));
     const bannerRojo = h("div.aviso-rojo", { role: "alert", hidden: true }, pic("p-nivel-rojo"),
       h("div", h("h2", "Señal de urgencia"), h("p", "Ya no necesitas medir más. Verde: ver qué hacer ahora.")));
-    // Criterio 35: una medición urgente YA CONFIRMADA (estado «valida») lleva directo al resultado, como un «sí» en alarma
+    // Una medición urgente YA CONFIRMADA (estado «valida») lleva directo al resultado, como un «sí» en alarma
     const rojoAhora = () => {
       const medidas = Object.fromEntries(Object.entries(s.medidas).map(([k, m]) => [k, m && m.estado === "valida" ? m : { valor: null, origen: null, calidad: null, estado: null }]));
       return window.MediBotReglas.evaluar(Object.assign({}, s, { medidas })).nivel === "rojo";
     };
-    const URGENTE = "Señal de urgencia. Ya no necesitas medir más. Verde: ver qué hacer ahora."; // = la franja (criterio 53)
+    const URGENTE = "Señal de urgencia. Ya no necesitas medir más. Verde: ver qué hacer ahora."; // = la franja
     const vozTras = (k) => {
       if (rojoAhora()) return URGENTE;
       const api = tarjetas[k]._api;
       if (api.pendiente()) return "¿Medimos otra vez? Verde: medir otra vez. Rojo: saltar.";
       if (api.medida()) return "Verde: seguir. Rojo: medir otra vez.";
-      return "Verde: medir. Rojo: saltar."; // no se pudo leer: la botonera dice Medir / Saltar (criterio 45)
+      return "Verde: medir. Rojo: saltar."; // no se pudo leer: la botonera dice Medir / Saltar
     };
     const alTerminar = (k, mensaje, valores) => { pintar(); hablar(`${mensaje} ${valores} ${vozTras(k)}`); };
-    const alCambiar = () => { if (montado && document.contains(nodo)) pintar(); }; // criterios 50 y 52
+    const alCambiar = () => { if (montado && document.contains(nodo)) pintar(); };
     const alMuestra = () => { if (montado && document.contains(nodo)) mostrarActivo(); };
     const tarjetas = [
       tarjetaMedida(ctx, { id: "fc", tipo: "pulso", n: 1, titulo: "Pulso y oxígeno", segundos: 30, instruccion: "Pon el dedo índice en el sensor, sin apretar, y no te muevas 30 segundos. Manos tibias, sin esmalte.", alMuestra, campos: [{ id: "fc", etiqueta: "Pulso (latidos por minuto)", min: 30, max: 220, step: 1, unidad: "latidos por minuto", voz: "Pulso", vozUnidad: "" }, { id: "spo2", etiqueta: "Oxígeno (%)", min: 70, max: 100, step: 1, unidad: "%", voz: "Oxígeno", vozUnidad: " %" }], alCambiar, alTerminar: (m, v) => alTerminar(0, m, v) }),
@@ -592,7 +670,7 @@
       tarjetas.forEach((t, k) => { t.hidden = k !== iVoz; });
       resumenEl.hidden = iVoz < tarjetas.length;
       const rojo = rojoAhora() && !midiendo();
-      if (montado && rojo && bannerRojo.hidden) hablar(URGENTE); // criterio 53: la voz lo dice en cuanto aparece la franja
+      if (montado && rojo && bannerRojo.hidden) hablar(URGENTE); // La voz lo dice en cuanto aparece la franja
       bannerRojo.hidden = !rojo;
       if (!hayPendientes(s)) avisoPendiente.hidden = true;
       if (iVoz >= tarjetas.length) {
@@ -605,15 +683,15 @@
         }), fila("peso", "Peso", s.peso.valor ? fmt(s.peso.valor, 1) + " kg" : "Sin pesar", null)));
       }
       ctx.botonera(botones());
-      if (montado && document.contains(nodo)) { mostrarActivo(); requestAnimationFrame(() => { if (document.contains(nodo)) mostrarActivo(); }); } // criterio 62: otra vez cuando ya se acomodó
+      if (montado && document.contains(nodo)) { mostrarActivo(); requestAnimationFrame(() => { if (document.contains(nodo)) mostrarActivo(); }); } // Otra vez cuando ya se acomodó
     }
-    // Criterio 37: si no cabe, la pantalla se desplaza sola a lo que importa (la medición activa, o la franja roja)
+    // Si no cabe, la pantalla se desplaza sola a lo que importa (la medición activa, o la franja roja)
     function mostrarActivo() {
       if (!bannerRojo.hidden) { bannerRojo.scrollIntoView({ block: "nearest" }); return; }
       const t = tarjetas[iVoz]; if (!t) return;
       const v = t.querySelector(".medicion__valor"); const e = t.querySelector(".medicion__etiquetas");
       const est = t.querySelector(".medicion__estado");
-      if (midiendo() && est) est.scrollIntoView({ block: "nearest" }); // midiendo: la cuenta y el estado a la vista (criterio 62)
+      if (midiendo() && est) est.scrollIntoView({ block: "nearest" }); // midiendo: la cuenta y el estado a la vista
       else if (e && e.childNodes.length) e.scrollIntoView({ block: "nearest" });
       if (v) v.scrollIntoView({ block: "nearest" });
     }
@@ -623,13 +701,13 @@
       if (iVoz >= tarjetas.length) return { azul: AZUL(), rojo: ATRAS(ctx, { fn: () => { iVoz = tarjetas.length - 1; pintar(); hablar(preguntaVoz()); } }), verde: SIGUE("Continuar", continuar) };
       const api = tarjetas[iVoz]._api;
       if (api.borrador && api.borrador()) return { azul: AZUL(), rojo: NO(() => { api.descartar(); pintar(); }, { texto: "Borrar", corto: "Borrar", voz: "borrar lo escrito" }),
-        verde: SIGUE("Usar este valor", () => { api.confirmarManual(); pintar(); hablar(preguntaVoz()); }, { pic: "p-si", corto: "Usar", id: "si", voz: "usar el valor escrito" }) }; // criterio 56
-      const saltar = NO(() => { api.cancelar(); api.omitir(); avanzar(); }, { texto: "Saltar", corto: "Saltar", voz: "saltar esta medición" }); // criterio 36: saltar omite de verdad
+        verde: SIGUE("Usar este valor", () => { api.confirmarManual(); pintar(); hablar(preguntaVoz()); }, { pic: "p-si", corto: "Usar", id: "si", voz: "usar el valor escrito" }) };
+      const saltar = NO(() => { api.cancelar(); api.omitir(); avanzar(); }, { texto: "Saltar", corto: "Saltar", voz: "saltar esta medición" }); // Saltar omite de verdad
       if (midiendo()) return { azul: AZUL(), rojo: saltar, verde: SIGUE("Midiendo…", () => hablar(api.faltaTexto()), { pic: "p-si", corto: "Midiendo", id: "si" }) };
       if (api.medida() && !api.pendiente()) return { azul: AZUL(), rojo: NO(() => medirAhora(), { texto: "Medir otra vez", corto: "Otra", voz: "medir otra vez" }), verde: SIGUE("Siguiente", () => avanzar()) };
       return { azul: AZUL(), rojo: saltar, verde: SIGUE(api.medida() ? "Medir otra vez" : "Medir", () => medirAhora(), { pic: "p-si", corto: "Medir", id: "si", voz: "medir" }) };
     };
-    // La voz dice lo mismo que la botonera (criterio 45)
+    // La voz dice lo mismo que la botonera
     const preguntaVoz = () => {
       if (!midiendo() && rojoAhora()) return URGENTE;
       if (iVoz >= tarjetas.length) return "Listo. ¿Seguimos? Aprieta el botón verde para continuar, o el rojo para regresar.";
@@ -668,7 +746,7 @@
     return nodo;
   }
   function hayPendientes(s) { return ["fc", "spo2", "temp"].some(k => s.medidas[k].estado === "confirmar"); }
-  /** Cuenta de la temperatura en palabras y con unidad (criterio 47): «hasta 3 minutos», «menos de un minuto». */
+  /** Cuenta de la temperatura en palabras y con unidad: «hasta 3 minutos», «menos de un minuto». */
   const cuentaLarga = (seg) => seg > 60 ? `hasta ${Math.ceil(seg / 60)} minutos` : seg > 0 ? "menos de un minuto" : "unos segundos";
 
   function tarjetaMedida(ctx, cfg) {
@@ -692,7 +770,7 @@
       inp._confirmar = () => { const v = parseFloat(inp.value); const ok = Number.isFinite(v) && v >= c.min && v <= c.max;
         s.medidas[c.id] = Number.isFinite(v) ? (ok ? { valor: v, origen: "manual", calidad: null, estado: "valida", intentos: 1 } : { valor: null, origen: "manual", calidad: null, estado: "invalida", nota: `Fuera de lo que puede medir el aparato (${c.min} a ${c.max}).`, intentos: 1 })
           : { valor: null, origen: null, calidad: null, estado: null };
-        estado.textContent = Number.isFinite(v) ? "Escrito a mano." : cfg.instruccion; // criterio 37: el estado corto, cerca del número
+        estado.textContent = Number.isFinite(v) ? "Escrito a mano." : cfg.instruccion; // El estado corto, cerca del número
       };
       manual.appendChild(h("div.campo", h("label", { for: "m-" + c.id }, c.etiqueta), inp));
     }
@@ -750,7 +828,7 @@
       manual.querySelectorAll("input").forEach(i => { const id = i.id.replace("m-", ""); if (s.medidas[id].valor != null) i.value = s.medidas[id].valor; });
       pintar();
     }
-    const avisar = () => { if (cfg.alTerminar && document.contains(nodo)) cfg.alTerminar(estado.textContent, valoresVoz()); }; // criterio 52
+    const avisar = () => { if (cfg.alTerminar && document.contains(nodo)) cfg.alTerminar(estado.textContent, valoresVoz()); };
     const cuentaTxt = () => cfg.tipo === "temp" ? `Midiendo. No te muevas. Falta poco: ${cuentaLarga(faltan)}.` : `Midiendo. No te muevas. Faltan ${faltan} segundos.`;
     async function medir() {
       if (midiendo) return;
@@ -770,7 +848,7 @@
           barra.firstChild.style.width = pct + "%"; barra.setAttribute("aria-valuenow", pct);
           if (cfg.tipo === "temp") { if (Number.isFinite(m.faltan)) faltan = m.faltan; estado.textContent = m.estable ? "Ya casi." : cuentaTxt(); valorEl.replaceChildren(fmt(m.valor, 1), h("small", "°C")); }
           else valorEl.replaceChildren(fmt(m.valor, 0), h("small", "latidos por minuto"), "  ", fmt(m.valor2, 0), h("small", "%"));
-          if (cfg.alMuestra) cfg.alMuestra(); // criterio 62: mientras mide, el número y la cuenta siguen a la vista
+          if (cfg.alMuestra) cfg.alMuestra(); // Mientras mide, el número y la cuenta siguen a la vista
         });
         if (cancelada) { /* la persona saltó la medición: lo que llegue después no se guarda */ }
         else if (r && r.estado === "invalida") {
@@ -810,7 +888,7 @@
     return nodo;
   }
 
-  /** Peso y estatura (criterio 41): la báscula solo pesa aquí, solo si es la medición activa, si nadie escribió el peso y
+  /** Peso y estatura: la báscula solo pesa aquí, solo si es la medición activa, si nadie escribió el peso y
       nunca a un niño o niña sola (lo pesa quien lo acompaña con el botón); fuera del rango creíble para la edad no se guarda. */
   function tarjetaPeso(ctx, cfg) {
     const s = ctx.sesion;
@@ -891,7 +969,7 @@
 
     const tituloSug = persona(s).yo ? TC.sugerencia_titulo : TC.sugerencia_titulo_otra;
     const respuesta = (id) => (s.situaciones && s.situaciones.respuestas ? s.situaciones.respuestas[id] ?? null : null);
-    const preguntaSug = (id) => TC.sugerencia_una.replace("{nombre}", M.nombreTema(id));
+    const preguntaSug = (id) => TC.sugerencia_una.replace("{nombre}", M.nombreTema(id, p)); // 99
     const sinoSug = new Map(sug.map(id => [id, sinoBtns(respuesta(id), v => {
       s.situaciones.respuestas[id] = v;
       if (v) { if (!s.categorias.includes(id) && !lleno()) s.categorias.push(id); }
@@ -905,14 +983,14 @@
           h("div", h("h3", preguntaSug(id)), h("div.sn", { role: "group", "aria-label": preguntaSug(id) }, b.si, b.no))); })) : null;
 
     const chipDe = new Map();
-    const chip = (t) => { const el = opcionBtn(t.nombre, { clase: ".chip", dibujo: PI.secciones[t.id] || "p-hojita", pulsado: s.categorias.includes(t.id), onclick: () => { alterna(t.id); pinta(); } }); chipDe.set(t.id, el); return el; };
+    const chip = (t) => { const el = opcionBtn(M.nombreTema(t.id, p), { clase: ".chip", dibujo: PI.secciones[t.id] || "p-hojita", pulsado: s.categorias.includes(t.id), onclick: () => { alterna(t.id); pinta(); } }); chipDe.set(t.id, el); return el; };
     const abiertos = new Set();
     const grupos = M.grupos().map(g => ({ g, secciones: visibles.filter(t => t.grupo === g.id) })).filter(x => x.secciones.length);
     for (const x of grupos) if (x.secciones.some(t => s.categorias.includes(t.id) && !sug.includes(t.id))) abiertos.add(x.g.id);
     for (const x of grupos) {
       x.panel = h("div.grupo__secciones", { id: "grupo-" + x.g.id, role: "group", "aria-label": x.g.nombre, hidden: !abiertos.has(x.g.id) }, x.secciones.map(chip));
       x.btn = h("button.opcion.grupo", { type: "button", "aria-expanded": String(abiertos.has(x.g.id)), "aria-controls": "grupo-" + x.g.id, onclick: () => (abiertos.has(x.g.id) ? cerrar(x) : abrir(x)) },
-        pic(PI.grupos[x.g.id] || "p-grupo-cuerpo"), h("span.opcion__texto", h("b", x.g.nombre), h("small", x.secciones.map(t => t.nombre).join("\u00a0· "))));
+        pic(PI.grupos[x.g.id] || "p-grupo-cuerpo"), h("span.opcion__texto", h("b", x.g.nombre), h("small", x.secciones.map(t => M.nombreTema(t.id, p)).join("\u00a0· "))));
     }
     function abrir(x) { abiertos.add(x.g.id); x.panel.hidden = false; x.btn.setAttribute("aria-expanded", "true"); }
     function cerrar(x) { abiertos.delete(x.g.id); x.panel.hidden = true; x.btn.setAttribute("aria-expanded", "false"); }
@@ -921,7 +999,7 @@
     function pinta() {
       for (const [id, el] of chipDe) { const on = s.categorias.includes(id); el.setAttribute("aria-pressed", String(on)); el.disabled = !on && lleno(); }
       for (const [id, b] of sinoSug) { b.si.setAttribute("aria-pressed", String(respuesta(id) === true)); b.no.setAttribute("aria-pressed", String(respuesta(id) === false)); }
-      cuenta.textContent = s.categorias.length ? `Elegiste ${s.categorias.length} de ${MAX}: ${s.categorias.map(M.nombreTema).join(", ")}.${lleno() ? " " + TC.lleno : ""}` : "Elegir es opcional.";
+      cuenta.textContent = s.categorias.length ? `Elegiste ${s.categorias.length} de ${MAX}: ${s.categorias.map(id => M.nombreTema(id, p)).join(", ")}.${lleno() ? " " + TC.lleno : ""}` : "Elegir es opcional.";
     }
     pinta();
     const nodo = vista("", titulo(T.categorias_titulo, T.categorias_ayuda), tarjetaSug,
@@ -935,12 +1013,15 @@
       pasos: () => {
         const ps = [];
         sug.forEach((id, i) => { const b = sinoSug.get(id);
-          ps.push({ siempre: true, opciones: [{ el: b.si, voz: `${i === 0 ? tituloSug + " " : ""}${preguntaSug(id)}`, nombre: M.nombreTema(id), alNo: () => b.no.click(),
+          ps.push({ siempre: true, opciones: [{ el: b.si, voz: `${i === 0 ? tituloSug + " " : ""}${preguntaSug(id)}`, nombre: M.nombreTema(id, p), alNo: () => b.no.click(),
             saltar: () => respuesta(id) !== null }] }); });
+        // Lo que no se le sugiere a esta persona (Cólicos de la regla a «Hombre») sigue en pantalla, pero la voz no lo ofrece
+        const ofrecer = (lista) => lista.filter(t => !M.noSugerir(t.id, p));
         for (const x of grupos) {
-          ps.push({ siempre: true, opciones: [{ el: x.btn, voz: `¿Quieres ideas de: ${x.g.nombre}? Ahí hay ${x.secciones.length} ${x.secciones.length === 1 ? "tema" : "temas"}: ${y(x.secciones.map(t => t.nombre))}.`, nombre: x.g.nombre,
+          const oir = ofrecer(x.secciones); if (!oir.length) continue;
+          ps.push({ siempre: true, opciones: [{ el: x.btn, voz: `¿Quieres ideas de: ${x.g.nombre}? Ahí hay ${oir.length} ${oir.length === 1 ? "tema" : "temas"}: ${y(oir.map(t => M.nombreTema(t.id, p)))}.`, nombre: x.g.nombre,
             dichoSi: `Abrimos: ${x.g.nombre}.`, alSi: () => abrir(x), alNo: () => cerrar(x), saltar: lleno }] });
-          if (abiertos.has(x.g.id)) ps.push({ multiple: true, opciones: x.secciones.map(t => ({ el: chipDe.get(t.id), voz: `¿Quieres ideas para: ${t.nombre}?`, nombre: t.nombre, saltar: () => yaSugerida(t.id) })) });
+          if (abiertos.has(x.g.id)) ps.push({ multiple: true, opciones: oir.map(t => ({ el: chipDe.get(t.id), voz: `¿Quieres ideas para: ${M.nombreTema(t.id, p)}?`, nombre: M.nombreTema(t.id, p), saltar: () => yaSugerida(t.id) })) });
         }
         return ps;
       },
@@ -956,6 +1037,8 @@
     const grupo = R.grupos.find(g => g.id === s.grupo);
     const ninoSub = s.grupo === "nino" ? T.edad_nino.opciones.find(o => o.id === s.edadNino) : null;
     const pq = T.para_quien.opciones.find(o => o.id === (s.paraQuien || "yo"));
+    const adolSub = s.grupo === "12a17" ? T.edad_adolescente.opciones.find(o => o.id === s.edadAdol) : null;
+    const sexoOp = s.sexo ? T.sexo.opciones.find(o => o.id === s.sexo) : null;
     const meds = (s.medicinas || []).map(id => (T.medicinas.opciones.find(o => o.id === id) || {}).nombre).filter(Boolean);
     const m = (id, dec, u) => s.medidas[id].estado === "invalida" ? "No válida" : s.medidas[id].valor != null ? fmt(s.medidas[id].valor, dec) + " " + u : "No se midió";
     const alarmasSi = ctx.datos.alarma.preguntas.filter(p => p.nivel !== "apoyo" && s.alarma[p.id] === true);
@@ -971,7 +1054,8 @@
     const aSobreTi = () => ctx.ir("sobreTi", volver);
     const lista = h("div.datos",
       dato(PI.para_quien[s.paraQuien || "yo"], "Para quién", pq ? pq.nombre : "—", aSobreTi, "¿Quieres corregir la edad o para quién es?"),
-      dato(PI.edades[s.grupo] || "p-adulto", "Edad", grupo ? grupo.nombre + (ninoSub ? ` (${ninoSub.nombre.toLowerCase()})` : "") : "—", aSobreTi),
+      dato(PI.edades[s.grupo] || "p-adulto", "Edad", grupo ? grupo.nombre + (ninoSub ? ` (${ninoSub.nombre.toLowerCase()})` : adolSub ? ` (${adolSub.nombre.toLowerCase()})` : "") : "—", aSobreTi),
+      sexoOp ? dato((PI.sexo || {})[s.sexo] || "p-otra-persona", "Sexo", (s.paraQuien === "nino" && sexoOp.nombre_nino) || sexoOp.nombre, aSobreTi) : null,
       s.embarazo === true ? dato("p-embarazada", "Embarazo", "Sí", aSobreTi) : null,
       s.embarazo !== true && Rec().perfil(s, null).lactancia ? dato("p-lactancia", "Embarazo o pecho", "Dando pecho", aSobreTi) : null,
       dato("p-tipo-suplemento", "Medicinas de todos los días", meds.length ? meds.map((x, k) => k ? x.toLowerCase() : x).join(", ") : "No sé (no se eligió)", () => ctx.ir("medicinas", { volverA: "confirmar", lista: true })),
@@ -981,7 +1065,7 @@
       dato("p-medir-oximetro", "Oxígeno", m("spo2", 0, "%"), () => ctx.ir("mediciones", volver)),
       dato("p-medir-termometro", "Temperatura axilar", m("temp", 1, "°C"), () => ctx.ir("mediciones", { volverA: "confirmar", medicion: 1 })),
       dato("p-alerta", "Preguntas importantes", alarmasSi.length ? `${alarmasSi.length} con «sí»` : "Ninguna con «sí»", () => ctx.ir("alarma", { volverA: "confirmar", corregir: true }), "¿Quieres corregir las respuestas de las preguntas importantes?"),
-      dato("p-hojita", "Temas", s.categorias.length ? s.categorias.map(Rec().nombreTema).join(", ") : "Ninguno", () => ctx.ir("cuidar", volver)));
+      dato("p-hojita", "Temas", s.categorias.length ? s.categorias.map(id => Rec().nombreTema(id, Rec().perfil(s, null))).join(", ") : "Ninguno", () => ctx.ir("cuidar", volver)));
     const nodo = vista("", titulo("¿Está bien esto?", "Revisa que los datos sean correctos. Si algo está mal, toca «Cambiar»."), lista);
     nodo._titulo = "Revisa tus datos";
     let iCorr = -1; // -1: preguntando «¿Está bien esto?»; 0..n: qué corregir
@@ -1008,7 +1092,11 @@
     const N = T.niveles[r.nivel]; const tr = tratoPara(T, p);
     const hoy = r.nivel === "ambar" && r.prisa === "hoy";
     const linEmb = lineaEmbarazo(T, s, p);
-    let acciones = accionesPara(T, r, p);
+    const menor = mensajeMenor(T, s, p, r); // 85a / 85b
+    const accMenor = accionMenor(T, s, p, r); // 94
+    const NV = textoNivel(T, r, accMenor);
+    const sinContra = (x) => accMenor ? sinContradecir(x) : x;
+    let acciones = accionesPara(T, r, p, accMenor);
     if (linEmb && p.senales.fiebre && r.nivel !== "rojo") acciones = [linEmb, ...acciones]; // embarazo con fiebre, paso 1
     const semaforo = r.mediciones.filter(f => !f.fuera_semaforo);
     const aparte = r.mediciones.filter(f => f.fuera_semaforo);
@@ -1025,7 +1113,7 @@
       f.nota ? h("p.medidas__nota", f.nota) : null,
       h("p.fuente", [origenTxt(f), f.rango, f.fuente ? "Fuente: " + sinFuentesLargas(f.fuente) : ""].filter(Boolean).join("\u00a0· ")));
     const incompleto = r.datosIncompletos ? (s.grupo === "nino" && !omitSem.length && !r.invalidas.length
-      ? h("p.aviso-incompleto", { role: "status" }, pic("p-alerta"), h("span", h("b", T.datos_incompletos_nino.titulo), " ", T.datos_incompletos_nino.texto))
+      ? h("p.aviso-incompleto", { role: "status" }, pic("p-alerta"), h("span", h("b", T.datos_incompletos_nino.titulo), " ", sinContra(T.datos_incompletos_nino.texto)))
       : h("p.aviso-incompleto", { role: "status" }, pic("p-alerta"), h("span", h("b", tr(T.datos_incompletos.titulo)), " ", tr(T.datos_incompletos.texto), omitSem.length ? ` No se midió: ${omitSem.join(", ")}.` : "", r.invalidas.length ? ` No fue válida: ${r.invalidas.join(", ")}.` : ""))) : null;
 
     let nodo;
@@ -1044,6 +1132,7 @@
         h("div.lugar-urgente", { role: "region", "aria-label": "A quién llamar" }, caja,
           h("p.caja-911__mas", tr("Si puedes, lleva tus medicinas o sus cajas.") + " ", T.niveles.rojo.acciones[1]),
           otras.map(l => lineaEl(l, r.apoyo)), unidadEl("rojo", lugar)),
+        menor ? mensajeMenorEl(menor) : null,
         vida && !r.apoyo ? h("p.apoyo-chico", pic("p-escuchar"), h("span", `Si te sientes muy triste o con angustia: ${vida.nombre}, ${vida.numero}.`)) : null);
       nodo._sinTerminar = true; // la cabecera no lleva Terminar: está en la botonera (rojo)
       nodo._botones = { azul: AZUL({ texto: "Repetir", corto: "Oír" }), rojo: NO(() => ctx.pedirBorrar(), { texto: "Terminar", corto: "Salir", pic: "p-terminar", voz: "terminar" }),
@@ -1051,14 +1140,16 @@
     } else {
       nodo = vista(".resultado",
         h("section.heroe.heroe--" + r.nivel, { role: "status" }, h("span.heroe__forma", pic(NIVEL_PIC[r.nivel])),
-          h("div", h("h1", N.nombre), h("p", tr(hoy ? N.frase_hoy : N.frase)))),
+          h("div", h("h1", NV.nombre), h("p", tr(NV.frase)))),
+        menor ? mensajeMenorEl(menor) : null,
         incompleto,
         h("div.columnas",
           h("section.bloque", h("h2", "Qué hacer ahora"), h("ol.pasos", acciones.map(a => h("li", pic(picPaso(a)), h("span", a)))),
             r.nivel === "verde" && s.grupo === "60mas" ? h("p.nota-limite", pic("p-alerta"), h("span", N.nota_60mas)) : null,
             linEmb && !p.senales.fiebre ? h("p.nota-limite", pic("p-embarazada"), h("span", linEmb)) : null,
             r.nivel === "ambar" ? unidadEl("ambar", lugar) : null,
-            h("h3", "A quién llamar"), h("div.lineas", Lug().lineas(r.nivel, lugar).map(l => lineaEl(l, r.apoyo)))),
+            // 85a: con el mensaje protector, el 911 sin «policía» en su nota
+            h("h3", "A quién llamar"), h("div.lineas", Lug().lineas(r.nivel, lugar).map(l => lineaEl(menor && l.id === "emergencias_911" ? Object.assign({}, l, { nota: T.embarazo_menor.nota_911 }) : l, r.apoyo)))),
           h("section.bloque", h("h2", "Lo que medimos"),
             semaforo.length ? h("div.medidas", semaforo.map(filaMed)) : h("p", "No se registró ninguna medición."),
             omitSem.length ? h("p.ayuda", "No se midió: " + omitSem.join(", ") + ". Por eso no se tomó en cuenta.") : null,
@@ -1074,20 +1165,21 @@
     }
     nodo._titulo = "Tu resultado";
     const NOMBRE_VOZ = { fc: "Pulso", spo2: "Oxígeno", temp: "Temperatura" }; // «Pulso 79: dentro de lo esperado»
-    const valores = semaforo.map(f => (f.valor == null ? `${NOMBRE_VOZ[f.id] || f.nombre}: no válida.` : vozMed(NOMBRE_VOZ[f.id] || f.nombre, fmt(f.valor, f.decimales) + (f.unidad === "%" ? " %" : f.unidad === "°C" ? " °C" : ""), f)) + (f.nota ? " " + f.nota : "")).join(" "); // criterio 55
-    const vozRojo = (() => { const t = rojo ? Lug().textoVoz("rojo", lugar) : ""; const k = t.indexOf("uno, uno."); return k < 0 ? { primera: t, resto: "" } : { primera: t.slice(0, k + 9), resto: t.slice(k + 9).trim() }; })();
+    const valores = semaforo.map(f => (f.valor == null ? `${NOMBRE_VOZ[f.id] || f.nombre}: no válida.` : vozMed(NOMBRE_VOZ[f.id] || f.nombre, fmt(f.valor, f.decimales) + (f.unidad === "%" ? " %" : f.unidad === "°C" ? " °C" : ""), f)) + (f.nota ? " " + f.nota : "")).join(" ");
+    const vozRojo = (() => { const t = rojo ? Lug().textoVoz("rojo", lugar, menor ? { sin: ["079"] } : undefined) : ""; const k = t.indexOf("uno, uno."); return k < 0 ? { primera: t, resto: "" } : { primera: t.slice(0, k + 9), resto: t.slice(k + 9).trim() }; })();
     const inicio = { verde: "Salió verde, como el semáforo: hoy no encontramos señales de alarma.", ambar: hoy ? "Salió amarillo: ve hoy a tu centro de salud." : "Salió amarillo: ve a tu centro de salud.", rojo: "Salió rojo: llama ya al 9 1 1." }[r.nivel];
     nodo._voz = {
       guion: () => [
         tr(inicio),
         rojo ? vozRojo.primera : "",
-        r.datosIncompletos ? (s.grupo === "nino" && !omitSem.length && !r.invalidas.length ? T.datos_incompletos_nino.texto : tr(T.datos_incompletos.texto)) : "",
+        menor ? menor.voz : "",
+        r.datosIncompletos ? (s.grupo === "nino" && !omitSem.length && !r.invalidas.length ? sinContra(T.datos_incompletos_nino.texto) : tr(T.datos_incompletos.texto)) : "",
         "Qué hacer ahora: " + acciones.join(" "),
         linEmb && !acciones.includes(linEmb) ? linEmb : "",
-        !rojo && r.nivel === "verde" && s.grupo === "60mas" ? N.nota_60mas : "", // criterio 57
+        !rojo && r.nivel === "verde" && s.grupo === "60mas" ? N.nota_60mas : "",
         rojo && motivos.length ? "Por qué: " + porqueCorto(T, motivos, N) + "." : "",
         rojo ? vozRojo.resto : "",
-        r.nivel === "ambar" ? Lug().textoVoz("ambar", lugar) : "",
+        r.nivel === "ambar" ? Lug().textoVoz("ambar", lugar, menor ? { sin: ["079"] } : undefined) : "", // 97: el 079 ya lo explicó el mensaje
         !rojo && valores ? tr("Tus mediciones: ") + valores : "",
         rojo ? "Si te da tiempo, aprieta el verde para tu hoja. Si no, vete ya." : `${T.voz_corta.resultado} Para seguir, aprieta el verde.`
       ].filter(Boolean).join(" "),
@@ -1109,7 +1201,7 @@
     const ayudaDe = (t) => (t.tema ? M.ayudaEn(t.entrada, t.tema) : t.entrada.ayuda || 1);
     const dibujoDe = (e) => PI.entradas[e.id] || PI.tipos[e.tipo] || "p-hojita";
     const linEmbF = lineaEmbarazo(T, s, p);
-    const vaEnHoja = (t) => typeof M.vaEnHoja === "function" ? M.vaEnHoja(t, rec, s.categorias, { omitir: linEmbF ? ["senal_prenatal"] : [], aceptadas: s.aceptadas || [] }) : true; // criterio 58
+    const vaEnHoja = (t) => typeof M.vaEnHoja === "function" ? M.vaEnHoja(t, rec, s.categorias, { omitir: linEmbF || mensajeMenor(T, s, p) ? ["senal_prenatal"] : [], aceptadas: s.aceptadas || [] }) : true;
     const franjaDe = (tema) => (rec.franjas || []).find(f => f.tema === tema) || null;
     // La secuencia: cada idea; al terminar las ideas de una sección, sus «Cuidado con esto» (hasta 2) y su «Cuándo ir»
     const items = [];
@@ -1136,7 +1228,7 @@
       return h("article.idea", { class: "idea--" + e.tipo, "data-i": i, "data-item": "idea", "data-habito": habito ? "1" : null },
         h("div.idea__lamina", pic(dibujoDe(e))),
         h("div.idea__cuerpo",
-          h("span.etiqueta", pic(PI.tipos[e.tipo] || "p-hojita"), [M.TIPO_TEXTO[e.tipo] || e.tipo, tema ? tema.nombre : null].filter(Boolean).join("\u00a0· ")),
+          h("span.etiqueta", pic(PI.tipos[e.tipo] || "p-hojita"), [M.TIPO_TEXTO[e.tipo] || e.tipo, tema ? M.nombreTema(tema.id, p) : null].filter(Boolean).join("\u00a0· ")),
           h("h2", e.nombre, e.nombre_cientifico ? h("span.idea__cientifico", e.nombre_cientifico) : null),
           !t.tema || t.porque === TR.sin_tema ? h("p.idea__porque", t.porque) : null,
           h("p.idea__para", e.para),
@@ -1155,7 +1247,7 @@
       return h("article.idea.idea--cuidado", { "data-cuidado": c.id, "data-tema": info.tema, "data-item": "cuidado" },
         h("div.idea__lamina", pic("p-alerta")),
         h("div.idea__cuerpo",
-          h("span.etiqueta", pic(PI.secciones[info.tema] || "p-hojita"), [TC.titulo || "Cuidado con esto", tema ? tema.nombre : null].filter(Boolean).join("\u00a0· ")),
+          h("span.etiqueta", pic(PI.secciones[info.tema] || "p-hojita"), [TC.titulo || "Cuidado con esto", tema ? M.nombreTema(tema.id, p) : null].filter(Boolean).join("\u00a0· ")),
           h("h2", c.nombre), h("p.idea__para", c.que_es),
           h("div.cuidado", pic("p-alerta"), h("p", h("strong", "Cuidado: "), c.por_que_cuidado)),
           info.texto ? h("p", h("b", (TC.en_su_lugar || "En su lugar") + ": "), info.texto)
@@ -1167,7 +1259,7 @@
     }
     function cuandoEl(f) {
       return h("section.cuando-ir", { role: "note", "data-tema": f.tema, "data-item": "cuando" },
-        h("section.cuando-ir__pronto", h("h3", pic("p-centro-salud"), T.cuidar.cuando_ir_titulo + "\u00a0· " + M.nombreTema(f.tema)), h("p", f.texto),
+        h("section.cuando-ir__pronto", h("h3", pic("p-centro-salud"), T.cuidar.cuando_ir_titulo + "\u00a0· " + M.nombreTema(f.tema, p)), h("p", f.texto),
           unidadTxt ? h("p.cuando-ir__lugar", { "data-voz": unidadVoz }, unidadTxt) : null,
           h("p.fuente", "Fuente: ", nombresFuentes(f.fuentes))),
         h("section.cuando-ir__ya", h("h3", pic("p-llamar-911"), "Si es urgente"), h("p", "Si sientes que es urgente, no esperes: llama al 911 o ve al hospital.")));
@@ -1192,7 +1284,7 @@
         const ultima = k >= items.length - 1;
         const sigue = ultima ? `${abiertas.has(it.i) ? textoAlt(t) + " " : ""}Verde: ver tu hoja.${abiertas.has(it.i) ? "" : ` Si ${e.tipo === "habito" ? "no puedes hacerlo" : "no lo encuentras"}, el rojo.`}` : abiertas.has(it.i) ? `${textoAlt(t)} Verde: siguiente idea.` : e.tipo === "habito" ? `Si puedes hacerlo, aprieta el verde. Si no puedes, el rojo.${completa ? "" : " Para oír más, el azul."}` : `Si ya lo tienes, aprieta el verde. Si no lo encuentras, el rojo.${completa ? "" : " Para oír más, el azul."}`;
         return [pre, `Idea ${ideaNum(k)} de ${total}. ${M.TIPO_TEXTO[e.tipo] || ""}: ${e.nombre}.`, completa ? e.para : primera(e.para),
-          como ? "Cómo y cuánto: " + como : "", // criterio 33: la cantidad nunca se recorta
+          como ? "Cómo y cuánto: " + como : "", // La cantidad nunca se recorta
           t.avisos.length ? "Cuidado: " + t.avisos.join(" ") : "", e.tipo === "planta" ? TR.planta_pie : "", completa ? M.textoAyuda(ayudaDe(t)) + "." : "",
           sigue].filter(Boolean).join(" ");
       }
@@ -1205,7 +1297,7 @@
       }
       return `Y recuerda: ${T.cuidar.cuando_ir_titulo}: ${it.f.texto} ${unidadVoz} Para seguir, aprieta el verde.`;
     }
-    // Criterio 58: «Va en tu hoja» sale de la hoja que de verdad se imprimiría ahora (ya ajustada a una carta), no de una
+    // «Va en tu hoja» sale de la hoja que de verdad se imprimiría ahora (ya ajustada a una carta), no de una
     // cuenta aparte; se recalcula en cada idea porque lo aceptado cambia qué ideas se quedan
     function marcarVa() {
       // Se cuenta como aceptada la idea en turno y las que faltan (salvo las ya rechazadas): así «Va en tu hoja» nunca promete
@@ -1233,7 +1325,7 @@
         const habito = it.t.entrada.tipo === "habito";
         // En hábitos, «No puedo hacerlo» (y el verde, «Sí puedo»)
         if (habito && !final()) Object.assign(verde, { texto: "Sí puedo", corto: "Puedo" });
-        if (abiertas.has(it.i) && !final()) Object.assign(verde, { texto: "Siguiente idea", corto: "Seguir", pic: "p-siguiente", voz: "ir a la siguiente idea" }); // criterio 45
+        if (abiertas.has(it.i) && !final()) Object.assign(verde, { texto: "Siguiente idea", corto: "Seguir", pic: "p-siguiente", voz: "ir a la siguiente idea" });
         return { azul: AZUL({ texto: "Escuchar esta", fn: () => hablar(vozItem(foco, true)) }), rojo: NO(() => noLo(), { texto: habito ? "No puedo hacerlo" : "No lo encuentro", corto: habito ? "No" : "No hay", rotulo: "botón rojo: te doy otra", voz: habito ? "decir que no puedes" : "decir que no lo encuentras" }), verde };
       }
       return { azul: AZUL({ fn: () => hablar(vozItem(foco, true)) }), rojo: ATRAS(ctx, { fn: () => anterior() }), verde };
@@ -1252,14 +1344,14 @@
       const i = it.i;
       if (!abiertas.has(i)) { abiertas.add(i); const pan = nodosItems[foco].querySelector("#alt-" + i); if (pan) pan.hidden = false; ctx.botonera(botones()); }
       if (!Array.isArray(s.rechazadas)) s.rechazadas = [];
-      if (!s.rechazadas.includes(it.t.entrada.id)) s.rechazadas.push(it.t.entrada.id); // criterio 46: la hoja solo dice «sin cambio» de lo rechazado
-      marcarVa(); // criterio 58: rechazada, quizá ya no va en la hoja
+      if (!s.rechazadas.includes(it.t.entrada.id)) s.rechazadas.push(it.t.entrada.id); // La hoja solo dice «sin cambio» de lo rechazado
+      marcarVa(); // Rechazada, quizá ya no va en la hoja
       const pan = nodosItems[foco].querySelector("#alt-" + i); if (pan && pan.scrollIntoView) pan.scrollIntoView({ block: "nearest" });
       hablar(textoAlt(it.t) + (final() ? " Verde: ver tu hoja." : " Aprieta el botón verde para la siguiente idea."));
     }
     const bloqueado = rec.bloqueado || !items.length;
     const nodo = vista(".fichas", bloqueado ? h("p.ideas-arriba__para.encabezado-personal", rec.encabezado) : arriba, bloqueado ? null : cont);
-    nodo._titulo = p.persona === "nino" ? "Lo que le toca a tu niño o niña" : p.persona === "otra" ? "Lo que le toca a la persona" : T.recomendaciones.titulo; // criterio 39
+    nodo._titulo = p.persona === "nino" ? "Lo que le toca a tu niño o niña" : p.persona === "otra" ? "Lo que le toca a la persona" : T.recomendaciones.titulo;
     if (!bloqueado) pintar();
     nodo._botones = bloqueado ? { azul: AZUL(), rojo: ATRAS(ctx), verde: SIGUE("Ver mi hoja", () => ctx.ir("resumen"), { pic: "p-imprimir", voz: "ver tu hoja" }) } : botones();
     nodo._voz = {
@@ -1282,11 +1374,15 @@
     const fecha = new Date().toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
     const rec = M.recomendar(s, r, s.categorias);
     const p = rec.perfil; const tr = tratoPara(T, p);
-    const acciones = accionesPara(T, r, p);
+    const accMenor = accionMenor(T, s, p, r); // 94
+    const NV = textoNivel(T, r, accMenor);
+    const acciones = accionesPara(T, r, p, accMenor);
     const linEmb = lineaEmbarazo(T, s, p);
-    const opcHoja = { omitir: linEmb ? ["senal_prenatal"] : [], aceptadas: s.aceptadas || [] };
+    const menorHoja = mensajeMenor(T, s, p, r); // 85a / 85b: en la hoja, la versión seca del mensaje
+    // 89: con el mensaje protector, sin la tarjeta «Tu control prenatal» (el mensaje ya lo dice) ni la sub-edad
+    const opcHoja = { omitir: linEmb || menorHoja ? ["senal_prenatal"] : [], aceptadas: s.aceptadas || [] };
     const ideas = M.paraHoja(rec, s.categorias, opcHoja);
-    // Criterio 58: si no cabe, ajustarHoja quita las ideas de más empezando por la de menos prioridad (data-recorte más alto)
+    // Si no cabe, ajustarHoja quita las ideas de más empezando por la de menos prioridad (data-recorte más alto)
     const prioridad = typeof M.recorteHoja === "function" ? M.recorteHoja(rec, s.categorias, opcHoja) : ideas;
     const recorteDe = (t) => { const k = prioridad.findIndex(x => x.entrada.id === t.entrada.id && (x.tema || null) === (t.tema || null)); return String(k < 0 ? prioridad.length : k); };
     const franjas = rec.bloqueado ? [] : (rec.franjas || []);
@@ -1302,21 +1398,22 @@
     const dibujoDe = (e) => PI.entradas[e.id] || PI.tipos[e.tipo] || "p-hojita";
     const avisosComunes = ideas.length > 1 ? [...new Set(ideas.flatMap(t => t.avisos))].filter(a => ideas.filter(t => t.avisos.includes(a)).length >= 2) : [];
     const hoja = h("div.hoja" + (r.nivel === "rojo" ? ".hoja--rojo" : ""),
-      h("div.hoja__nivel", { class: "hoja__nivel--" + r.nivel }, pic(NIVEL_PIC[r.nivel]), h("div", h("b", N.nombre), h("div", tr(hoy ? N.frase_hoy : N.frase)))),
+      h("div.hoja__nivel", { class: "hoja__nivel--" + r.nivel }, pic(NIVEL_PIC[r.nivel]), h("div", h("b", NV.nombre), h("div", tr(NV.frase)))),
       h("p.hoja__titulo", T.imprimir_titulo),
-      h("p.hoja__meta", "Proyecto escolar MediBot, gratis. " + fecha + para + " · Edad: " + (grupo ? grupo.nombre : "—") + (ninoSub ? ` (${ninoSub.nombre.toLowerCase()})` : "")),
+      h("p.hoja__meta", "Proyecto escolar MediBot, gratis. " + fecha + para + " · Edad: " + (grupo ? grupo.nombre : "—") + (ninoSub && !menorHoja ? ` (${ninoSub.nombre.toLowerCase()})` : "")),
       r.datosIncompletos ? (s.grupo === "nino" && !r.omitidas.filter(n => n !== R.parametros.imc.nombre).length && !r.invalidas.length
-        ? h("p", h("b", T.datos_incompletos_nino.titulo + " "), T.datos_incompletos_nino.texto)
+        ? h("p", h("b", T.datos_incompletos_nino.titulo + " "), accMenor ? sinContradecir(T.datos_incompletos_nino.texto) : T.datos_incompletos_nino.texto)
         : h("p", h("b", tr(T.datos_incompletos.titulo) + " "), tr(T.datos_incompletos.texto))) : null,
       h("div.hoja__dos",
         h("div", h("h2", "Qué hacer ahora"), h("ol", acciones.map(a => h("li", a))), linEmb ? h("p", linEmb) : null,
+          menorHoja ? h("div.hoja__menor", { "data-mensaje": "embarazo-menor" }, menorHoja.hoja.map((x, k) => h("p", k === 0 ? h("b", x) : x))) : null,
           r.nivel === "rojo" ? null : h("p.hoja__vuelve", h("b", T.safety_netting.titulo + " "), T.safety_netting.puntos.map(tr).join(" "))),
         h("div", h("h2", "Mediciones de hoy"),
           h("table.tabla.tabla--hoja", h("tbody", r.mediciones.map(f => h("tr", h("td", f.nombre), h("td.valor", f.valor == null ? "Sin valor" : [fmt(f.valor, f.decimales), " ", h("small", f.unidad)]), h("td", medTag(f, true)))))),
           s.peso.valor ? h("p", h("b", "Peso: "), fmt(s.peso.valor, 1) + " kg" + (s.talla.valor ? "" : ". IMC: falta la talla.")) : null,
           r.omitidas.filter(n => !(s.peso.valor && n === R.parametros.imc.nombre)).length ? h("p.fuente", "No se midió: " + r.omitidas.filter(n => !(s.peso.valor && n === R.parametros.imc.nombre)).join(", ")) : null,
           motivos.length ? h("div", h("h3", "Por qué"), h("ul", motivos.map(m => h("li", m.texto)))) : null)),
-      // Criterio 55: las notas de las mediciones, a todo lo ancho (en la columna angosta no cabían en una carta)
+      // Las notas de las mediciones, a todo lo ancho (en la columna angosta no cabían en una carta)
       r.mediciones.some(f => f.nota) ? h("p.hoja__notas-med", h("b", "Notas de las mediciones: "), r.mediciones.filter(f => f.nota).map(f => `${f.nombre}: ${f.nota}`).join(" ")) : null,
       h("p.hoja__lugares", { "data-voz": Lug().textoVoz(r.nivel, lugar) }, h("b", Lug().textos().titulo + " "), Lug().textoHoja(r.nivel, lugar)),
       ideas.length ? h("div.hoja__ideas", h("h2", M.tituloHoja(ideas.length)),
@@ -1328,7 +1425,7 @@
       cuidados.length ? h("p.hoja__cuidado", h("b", (TC.titulo || "Cuidado con esto") + ": "),
         cuidados.map((x, i) => h("span", { "data-tema": x.tema, "data-cuidado": x.tarjeta.id }, i ? "\u00a0· " : "", M.textoCuidado(x, "hoja"))), ".") : null,
       franjas.length ? h("div.hoja__cuando-ir", h("h2", T.cuidar.cuando_ir_titulo),
-        h("ul", franjas.map(f => h("li", { "data-tema": f.tema }, h("b", M.nombreTema(f.tema) + ": "), f.texto)))) : null,
+        h("ul", franjas.map(f => h("li", { "data-tema": f.tema }, h("b", M.nombreTema(f.tema, p) + ": "), f.texto)))) : null,
       ideas.some(t => (M.requiereLeyenda ? M.requiereLeyenda(t.entrada) : t.entrada.tipo === "suplemento")) ? h("div.leyenda.leyenda--hoja", L.mayusculas.map(l => h("p.leyenda__mayus", l)), h("p", L.linea)) : null,
       h("p.hoja__no-dejes", "No dejes esta hoja aquí."),
       h("p.fuente.hoja__fuentes", (fuentes.length ? "Fuentes: " + fuentes.join("\u00a0· ") + ". " : "") + T.descargo_corto + " Proyecto escolar MediBot. Rangos consultados el " + R.consultado + "."));
@@ -1351,7 +1448,7 @@
     return nodo;
   }
 
-  /* ---------- Hoja impresa: «Cuidado con esto» va «si cabe» (criterio 16) ----------
+  /* ---------- Hoja impresa: «Cuidado con esto» va «si cabe» ----------
      Antes de imprimir se mide la hoja con las reglas de css/print.css aplicadas un instante y al ancho de una carta. Si no cabe,
      la línea «Cuidado con esto» no se imprime (se vio y se oyó en pantalla); si aun así no cabe, la hoja se achica lo justo
      (mínimo 91 %, 10 pt). tools/e2e_pantallas.py (E3b, E10, E10c) imprime a PDF los casos más largos y exige 1 página. */
@@ -1374,24 +1471,24 @@
     const lis = [...hoja.querySelectorAll(".ideas-hoja > li")];
     hoja.classList.remove(...ANTES, ...DESPUES, "hoja--sin-extras"); hoja.style.zoom = ""; lis.forEach(l => l.removeAttribute(IDEA_FUERA));
     let alto = altoImpreso(hoja);
-    // Criterios 38, 58 y 65: antes de achicar se quitan, en este orden, el «Vuelve si…», las alternativas y los dibujos de
+    // Antes de achicar se quitan, en este orden, el «Vuelve si…», las alternativas y los dibujos de
     // las ideas, y se aprieta el interlineado (la letra no cambia); luego las ideas de más UNA POR UNA, empezando por la de
     // menos prioridad (queda al menos una por sección, y primero se quedan las de la situación y las aceptadas); al final
     // «Cuidado con esto» y las fuentes. Los avisos, «Cuándo ir», «¿A dónde voy?» y el 911 nunca se quitan.
     const extras = lis.filter(l => l.dataset.extra).sort((a, b) => Number(b.dataset.recorte) - Number(a.dataset.recorte));
     const pasos = [...ANTES.map(c => () => hoja.classList.add(c)), ...extras.map(l => () => l.setAttribute(IDEA_FUERA, "1")), ...DESPUES.map(c => () => hoja.classList.add(c))];
     for (const paso of pasos) { if (alto <= CARTA.alto) break; paso(); alto = altoImpreso(hoja); }
-    // Solo si aun quitando todo eso no cabe, se achica lo justo (último recurso). Criterio 65: piso real de 10 pt
+    // Solo si aun quitando todo eso no cabe, se achica lo justo (último recurso). Piso real de 10 pt
     // (base de 11 pt × 0.91 = 10.01 pt)
     if (alto > CARTA.alto) { hoja.style.zoom = String(Math.max(0.91, Math.floor((CARTA.alto / alto) * 100) / 100)); alto = altoImpreso(hoja); }
-    // Criterio 58: el título dice cuántas ideas salen de verdad impresas
+    // El título dice cuántas ideas salen de verdad impresas
     const quedan = lis.filter(l => !l.hasAttribute(IDEA_FUERA));
     const h2 = hoja.querySelector(".hoja__ideas h2"); const MR = window.MediBotRecomendaciones;
     if (h2 && MR && MR.tituloHoja) h2.textContent = MR.tituloHoja(quedan.length);
     hoja.dataset.altoCarta = String(alto);
     return quedan.map(l => ({ entrada: l.dataset.entrada, tema: l.dataset.tema || null }));
   }
-  /** Criterio 58: qué ideas saldrían impresas si la hoja se armara ahora. Arma la hoja de verdad (resumen) un instante en el
+  /** Qué ideas saldrían impresas si la hoja se armara ahora. Arma la hoja de verdad (resumen) un instante en el
       lugar de la pantalla actual, la ajusta a una carta como al imprimir y la quita; null si no se puede medir. */
   function ideasImpresas(ctx, actual) {
     const app = document.getElementById("app"); const cont = document.getElementById("contenido");
@@ -1438,13 +1535,15 @@
           h("div.operador__fila", h("label", h("input", { type: "checkbox", checked: Voz() && Voz().siempre, onchange: e => { Voz().siempre = e.target.checked; ctx.guardarPref("voz", e.target.checked ? "1" : "0"); } }), "Leer en voz alta cada pantalla")),
           h("div.operador__fila", h("button.btn.btn--secundario", { type: "button", onclick: () => ctx.tema() }, icono("i-moon"), "Cambiar entre claro y oscuro"),
             h("label", "Altitud (m):", altitud)),
-          window.medibotEscritorio ? h("div.operador__fila", h("button.btn.btn--fantasma", { type: "button", onclick: () => { if (window.confirm("¿Cerrar MediBot? (también puedes usar " + window.medibotEscritorio.salida + ")")) window.medibotEscritorio.salir(); } }, icono("i-x"), "Salir de la aplicación")) : null)),
+          window.medibotEscritorio ? h("div.operador__fila", h("button.btn.btn--fantasma", { type: "button", onclick: () => ctx.pedirCerrarApp() }, icono("i-x"), "Salir de la aplicación")) : null)),
       h("div.acciones", h("button.btn.btn--primario.btn--xl", { type: "button", onclick: () => { S.removeEventListener("estado", pinta); ctx.cerrarPanel(); } }, icono("i-check"), "Cerrar panel")));
     nodo._titulo = "Panel del operador";
+    // 105: el panel no tiene botonera; la voz no manda a «apretar el verde» y los botones físicos no hacen nada aquí
+    nodo._voz = { guion: () => "Panel del operador. Es solo para quien atiende el quiosco. Para volver, toca «Cerrar panel».", accion: () => true };
     return nodo;
   }
 
-  /* ---------- Operador: «¿A dónde voy?» (criterio 17) ----------
+  /* ---------- Operador: «¿A dónde voy?» ----------
      Pasos: municipio → unidad (CLUES o a mano) → datos prellenados («confírmalo») → vista previa leída en voz → guardar en el
      equipo. Exportar e importar en JSON. El catálogo (data/clues_oaxaca.js) se carga SOLO aquí. */
   function lugar(ctx) {
@@ -1456,7 +1555,7 @@
       if (cat()) return pintar();
       cuerpo.replaceChildren(h("p", "Cargando el catálogo de unidades de salud…"));
       const sc = document.createElement("script");
-      sc.src = "data/clues_oaxaca.js?v=0.5.0";
+      sc.src = "data/clues_oaxaca.js?v=0.6.0";
       sc.onload = pintar;
       sc.onerror = () => { aviso.textContent = "No se pudo cargar el catálogo. Puedes escribir la unidad a mano."; paso = 3; pintar(); };
       document.head.appendChild(sc);
@@ -1473,7 +1572,7 @@
       const lista = h("div.opciones.lugar__municipios");
       const filtrar = () => {
         const ms = L.buscarMunicipios(cat(), q.value, 40);
-        lista.replaceChildren(...ms.map(m => opcionBtn(m.nombre, { marca: false, sub: `${L.unidadesDe(cat(), m.clave).length} unidades públicas en el catálogo`, onclick: () => { muni = m; paso = 2; pintar(); } })));
+        lista.replaceChildren(...ms.map(m => opcionBtn(m.nombre, { marca: false, sub: ((n) => `${n} ${n === 1 ? "unidad pública" : "unidades públicas"} en el catálogo`)(L.unidadesDe(cat(), m.clave).length), onclick: () => { muni = m; paso = 2; pintar(); } })));
         if (!ms.length) lista.replaceChildren(h("p", "No encontré ese municipio."));
       };
       q.addEventListener("input", filtrar); filtrar();

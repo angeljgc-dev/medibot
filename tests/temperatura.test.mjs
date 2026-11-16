@@ -50,8 +50,8 @@ function azar(semilla) {
 beforeEach(() => mock.timers.enable({ apis: ["setTimeout", "setInterval", "Date"], now: 0 }));
 afterEach(() => mock.timers.reset());
 
-/* ===================== Criterio 1: subida exponencial 28 → 39.6 °C ===================== */
-describe("Criterio 1 · subida exponencial de 28 a 39.6 °C", () => {
+/* ===================== Caso 1: subida exponencial 28 → 39.6 °C ===================== */
+describe("Caso 1 · subida exponencial de 28 a 39.6 °C", () => {
   const A = 39.6 - 28;
   const curva = (tau) => (s) => 39.6 - A * Math.exp(-s / tau);
   // Momento en que el cambio en 30 s cae a ≤ 0.1 °C: v(t) − v(t−30) = A·e^(−t/τ)·(e^(30/τ) − 1) = 0.1
@@ -114,8 +114,8 @@ describe("Criterio 1 · subida exponencial de 28 a 39.6 °C", () => {
   });
 });
 
-/* ===================== Criterio 2: ruido que no se estabiliza → inválida ===================== */
-describe("Criterio 2 · sin estabilizarse en 180 s la medida es inválida", () => {
+/* ===================== Caso 2: ruido que no se estabiliza → inválida ===================== */
+describe("Caso 2 · sin estabilizarse en 180 s la medida es inválida", () => {
   test("ruido ±0.3 °C alrededor de 36.5: resuelve (no rechaza) con estado 'invalida' y valor null a los 180 s", async () => {
     const S = nuevosSensores(); S._estado("sim", "prueba");
     const r = azar(26);
@@ -144,8 +144,8 @@ describe("Criterio 2 · sin estabilizarse en 180 s la medida es inválida", () =
   });
 });
 
-/* ===================== Criterio 3: estable enseguida, pero con 30 s de ventana ===================== */
-describe("Criterio 3 · un flujo estable desde el inicio espera la ventana de 30 s", () => {
+/* ===================== Caso 3: estable enseguida, pero con 30 s de ventana ===================== */
+describe("Caso 3 · un flujo estable desde el inicio espera la ventana de 30 s", () => {
   test("36.5 constante: no termina antes de 30 s de datos; segundos = 20 no manda", async () => {
     const S = nuevosSensores(); S._estado("sim", "prueba");
     const { resultado, llamadas, fin } = await correr(S, "temp", 20, () => ({ t: "temp", c: 36.5 }), 200);
@@ -259,8 +259,8 @@ describe("Simulador y Web Serial con la regla nueva", () => {
   });
 });
 
-/* ===================== Criterio 4: pulso y peso sin cambios (caracterización) ===================== */
-describe("Criterio 4 · pulso y peso se comportan como antes", () => {
+/* ===================== Caso 4: pulso y peso sin cambios (caracterización) ===================== */
+describe("Caso 4 · pulso y peso se comportan como antes", () => {
   test("sin sensor, medir rechaza para todos los tipos", async () => {
     const S = nuevosSensores();
     for (const t of ["pulso", "temp", "peso"]) await assert.rejects(S.medir(t, 10, () => {}), /Sin sensor conectado/);

@@ -1,4 +1,4 @@
-// Ronda 5 (criterio 77): pictogramas en el estilo «A · Bordado». Revisa lo que se dibuja de verdad (los SVG sueltos, el
+// Ronda 5: pictogramas en el estilo «A · Bordado». Revisa lo que se dibuja de verdad (los SVG sueltos, el
 // sprite de assets/pictos y el que va dentro de index.html) y el token del contorno en claro, oscuro e impresión.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -20,9 +20,9 @@ const html = leer("index.html");
 const spriteHtml = simbolos(html.slice(html.indexOf("<!-- sprite:inicio -->"), html.indexOf("<!-- sprite:fin -->")));
 const valores = (cuerpo, attr) => [...cuerpo.matchAll(new RegExp(`\\s${attr}="([^"]*)"`, "g"))].map(m => m[1].trim());
 
-describe("criterio 77 · pictogramas «A · Bordado»", () => {
-  test("los 75 ids: índice = archivos sueltos = sprite = sprite de index.html", () => {
-    assert.equal(IDS.length, 75, "75 pictogramas en indice.json");
+describe("pictogramas «A · Bordado»", () => {
+  test("los 78 ids: índice = archivos sueltos = sprite = sprite de index.html", () => {
+    assert.equal(IDS.length, 78, "78 pictogramas en indice.json (75 + p-mujer, p-hombre y p-no-decir de la v0.6)");
     const archivos = readdirSync(join(RAIZ, "assets/pictos")).filter(f => /^p-.*\.svg$/.test(f)).map(f => f.replace(/\.svg$/, "")).sort();
     assert.deepEqual(archivos, [...IDS].sort(), "un archivo por id, sin sobrantes");
     assert.deepEqual(Object.keys(sprite).sort(), [...IDS].sort(), "sprite.svg");
@@ -67,7 +67,7 @@ describe("criterio 77 · pictogramas «A · Bordado»", () => {
     for (const [k, mapa] of Object.entries(P)) if (mapa && typeof mapa === "object" && k !== "titulos") for (const v of Object.values(mapa)) if (typeof v === "string") usados.add(v);
     assert.ok(usados.size >= 40, "se encontraron los ids que usa la app: " + usados.size);
     for (const id of usados) assert.ok(IDS.includes(id), "id que usa la app y no existe: " + id);
-    assert.deepEqual(Object.keys(P.titulos).sort(), [...IDS].sort(), "data/pictos.js nombra a los 75");
+    assert.deepEqual(Object.keys(P.titulos).sort(), [...IDS].sort(), "data/pictos.js nombra a los 78");
     assert.match(String(indice.estilo), /Bordado/, "indice.json con la versión de estilo nueva");
   });
 

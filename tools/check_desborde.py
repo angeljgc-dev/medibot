@@ -1,4 +1,4 @@
-"""«Nada desbordado ni descolocado» (criterio 27): desborde y alineación de MediBot en todas las pantallas y anchos.
+"""«Nada desbordado ni descolocado»: desborde y alineación de MediBot en todas las pantallas y anchos.
 Uso (desde la carpeta MediBot):  PYTHONUTF8=1 python tools/check_desborde.py [--capturas DIR] [--json SALIDA] [--rapido]
 Requiere Playwright para Python con chromium. Levanta `python -m http.server` y lo detiene por su PID.
 
@@ -22,9 +22,10 @@ raiz = pathlib.Path(__file__).resolve().parent.parent
 PANTALLAS = ["reposo", "bienvenida", "sobreTi", "sobreTi-completo", "medicinas", "medicinas-lista", "alarma", "alarma-rojo",
              "mediciones", "mediciones-resumen", "cuidar", "cuidar-abierto", "confirmar", "resultado", "resultado-rojo", "resultado-fiebre",
              "fichas", "fichas-no", "fichas-cuidado", "fichas-cuando", "resumen", "bebe", "dlg-borrar", "dlg-acerca", "dlg-apoyo",
-             "operador", "verificacion", "evidencia", "lugar", "lugar-datos", "reposo-escritorio", "dlg-cerrar"]
-# «reposo-escritorio» y «dlg-cerrar» (criterio 76): el reposo de la app de escritorio, con «Cerrar MediBot» y su diálogo
-# (se simula window.medibotEscritorio solo para esos dos estados)
+             "operador", "verificacion", "evidencia", "lugar", "lugar-datos", "reposo-escritorio", "dlg-cerrar", "sobreTi-sexo", "sobreTi-nina", "resultado-menor"]
+# «reposo-escritorio» y «dlg-cerrar»: el reposo de la app de escritorio, con «Cerrar MediBot» y su diálogo
+# (se simula window.medibotEscritorio solo para esos dos estados). «sobreTi-sexo» y «sobreTi-nina» (ronda 6):
+# la pregunta de sexo con la del embarazo de una mujer adulta, y la de una niña de 9 a 11.
 VENTANAS = [(320, 640), (375, 812), (768, 1024), (1280, 800), (1440, 900), (1920, 1080)]
 ESCALAS = ["md", "lg"]   # «Letra grande»
 TEMAS = ["light", "dark"]
@@ -102,7 +103,7 @@ def ir(page, destino):
     Devuelve la pantalla que mostró la app (para revisar que es la pedida)."""
     page.evaluate("""(d) => {
       const M = window.MediBot, med = v => ({ valor: v, origen: "manual", calidad: null, estado: "valida" });
-      // terminar() regresa a letra normal (criterio 49): la escala de esta corrida se vuelve a poner después de cada terminar()
+      // terminar() regresa a letra normal: la escala de esta corrida se vuelve a poner después de cada terminar()
       const T = () => { M.terminar(); document.documentElement.dataset.scale = window.__escala || "md"; window.dispatchEvent(new Event("resize")); };
       document.querySelectorAll("dialog[open]").forEach(x => x.close());
       if (window.__stubEscritorio) { delete window.medibotEscritorio; delete window.__stubEscritorio; }
@@ -114,15 +115,19 @@ def ir(page, destino):
       const s = M.sesion;
       if (d === "reposo") { T(); return; }
       if (d === "operador") { M.abrirOperador(); return; }
-      if (["confirmar", "resultado", "resultado-rojo", "resultado-fiebre", "fichas", "fichas-no", "fichas-cuidado", "fichas-cuando", "resumen", "mediciones-resumen"].includes(d)) {
+      if (["confirmar", "resultado", "resultado-rojo", "resultado-fiebre", "resultado-menor", "fichas", "fichas-no", "fichas-cuidado", "fichas-cuando", "resumen", "mediciones-resumen"].includes(d)) {
         Object.assign(s, { paraQuien: "yo", grupo: "18a59", peso: { valor: 70, origen: "manual" }, talla: { valor: 170, origen: "manual" }, medicinas: ["presion", "azucar"] });
         if (d === "resultado-fiebre") Object.assign(s, { embarazo: true, embarazoOpcion: "si", embarazoRespondido: true });
+        // ronda 6 (85a): el mensaje protector de una adolescente de 12 a 14 embarazada, consulta de un adulto
+        if (d === "resultado-menor") Object.assign(s, { paraQuien: "otra", grupo: "12a17", edadAdol: "12a14", sexo: "mujer", embarazo: true, embarazoOpcion: "si", embarazoRespondido: true });
         Object.assign(s.medidas, { fc: med(d === "resultado-fiebre" ? 112 : 78), spo2: med(d === "resultado-rojo" ? 84 : 97), temp: med(d === "resultado-fiebre" ? 38.6 : 36.6) });
         for (const q of window.MediBotData.alarma.preguntas) s.alarma[q.id] = false;
         if (d === "fichas-cuidado" || d === "fichas-cuando") Object.assign(s, { embarazoOpcion: "lactancia", embarazoRespondido: true, lactancia: true, medicinas: ["ninguna"], categorias: ["digestion", "ninos"] });
         else if (d !== "resultado-rojo") s.categorias.push(...window.MediBotData.corpus.temas.filter(x => x.clase !== "situacion").slice(0, 3).map(x => x.id));
       }
       if (d === "sobreTi-completo") Object.assign(s, { paraQuien: "yo", grupo: "18a59" });
+      if (d === "sobreTi-sexo") Object.assign(s, { paraQuien: "yo", grupo: "18a59", sexo: "mujer" });
+      if (d === "sobreTi-nina") Object.assign(s, { paraQuien: "nino", grupo: "nino", edadNino: "9a11", sexo: "mujer" });
       if (d === "medicinas-lista") Object.assign(s, { paraQuien: "yo", grupo: "18a59", medicinas: ["presion"] });
       if (d === "cuidar-abierto") Object.assign(s, { paraQuien: "yo", grupo: "18a59", categorias: ["digestion"] });
       if (d === "mediciones-resumen") { M.ir("mediciones", { medicion: 3 }); return; }
@@ -175,7 +180,7 @@ def main():
                 for escala in ESCALAS:
                     for (ancho, alto) in ventanas:
                         page = nav.new_page(viewport={"width": ancho, "height": alto}, color_scheme=tema)
-                        # criterio 79: de fábrica es claro; el oscuro se fuerza como lo elegiría el operador en el panel
+                        # De fábrica es claro; el oscuro se fuerza como lo elegiría el operador en el panel
                         page.add_init_script("try { localStorage.clear(); } catch (e) { console.warn(e.message); }" + (" try { localStorage.setItem('medibot.theme', 'dark'); } catch (e) { console.warn(e.message); }" if tema == "dark" else ""))
                         page.goto(f"http://127.0.0.1:{puerto}/index.html")
                         page.wait_for_function("() => window.MediBot")

@@ -1,4 +1,4 @@
-/* «¿A dónde voy?» (criterio 17): lógica pura, sin DOM. Datos: data/lugares.js (líneas nacionales y plantilla de la unidad)
+/* «¿A dónde voy?»: lógica pura, sin DOM. Datos: data/lugares.js (líneas nacionales y plantilla de la unidad)
    y, solo en la pantalla del operador, data/clues_oaxaca.js.
    Pruebas: tests/fase3.test.mjs (L1–L7).
 
@@ -126,8 +126,9 @@
     return [u ? unidadTexto(u, campos(cfg)) : "", ...lineas(nivel, cfg).map(l => punto(lineaTexto(l)))].filter(Boolean).join(" ");
   }
   /** Lo que dice la voz. En rojo empieza con «Si es urgente, llama ya al 911: nueve, uno, uno.». */
-  function textoVoz(nivel, cfg) {
-    const u = unidadPara(nivel, cfg); const ls = lineas(nivel, cfg);
+  function textoVoz(nivel, cfg, opc) {
+    const sin = (opc && opc.sin) || []; // números que la voz ya dijo en otro lado (p. ej. el 079 del mensaje protector)
+    const u = unidadPara(nivel, cfg); const ls = lineas(nivel, cfg).filter(l => !sin.some(n => String(l.numero).startsWith(n)));
     const partes = [];
     if (nivel === "rojo" && ls[0] && ls[0].destacado) partes.push(punto(`${T().rojo_llama || "Si es urgente, llama ya al"} ${ls[0].numero}: ${ls[0].voz}`));
     if (u) partes.push(unidadVoz(u, campos(cfg)));

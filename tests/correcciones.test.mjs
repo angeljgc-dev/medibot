@@ -1,7 +1,7 @@
 // Ronda de correcciones (2026-11-02): lo que las pruebas y la revisión encontraron en la fase 2.
 // Campos nuevos: docs/corpus_esquema.md «Campos de la ronda de correcciones» (sin_cambio, avisos_perfil, actividad)
 // y `ocultar_si` en temas. Las pruebas de comportamiento usan corpus armados aquí (no dependen del corpus real);
-// al final, criterio 11 contra el corpus real.
+// al final, la actividad física contra el corpus real.
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -165,7 +165,7 @@ describe("4 · hoja impresa (M2)", () => {
   });
 });
 
-describe("5 · actividad física (criterio 11)", () => {
+describe("5 · actividad física", () => {
   test("5a: si hay actividad apta, la selección la incluye aunque ya haya 2 hábitos (cambia el último hábito que no es ancla)", () => {
     usar([{ id: "a", nombre: "A", clase: "molestia" }], [
       E("h1", "habito", ["a"], 3), E("h2", "habito", ["a"], 3), E("c1", "alimento", ["a"], 2), E("c2", "alimento", ["a"], 2),
@@ -202,7 +202,7 @@ describe("5 · actividad física (criterio 11)", () => {
 });
 
 describe("decisiones de diseño (2026-11-02)", () => {
-  test("D2: las alternativas salen SOLO de la lista `alternativas` (sin relleno del mismo tema)", () => {
+  test("las alternativas salen SOLO de la lista `alternativas` (sin relleno del mismo tema)", () => {
     usar([{ id: "a", nombre: "A" }], [E("juego", "habito", ["a"], 3, { alternativas: ["caminar", "planta_x"] }), E("caminar", "habito", ["a"], 2),
       E("planta_x", "planta", ["a"], 2, { excluir: libre({ edad_minima: 18 }) }), E("tortilla", "alimento", ["a"], 3), E("lavar", "habito", ["a"], 3)]);
     igual(M.alternativas("juego", per()).map(a => a.id), ["caminar", "planta_x"]);
@@ -214,14 +214,14 @@ describe("decisiones de diseño (2026-11-02)", () => {
     assert.equal(sin.sinCambio, true);
     assert.doesNotMatch(M.textoNoLoEncuentro(sin, "voz"), /planta p|lo que más ayuda/, "sin alternativas aptas no lee un si_no_hay que nombra algo que no le toca");
   });
-  test("D3: «mismo remedio» por nombre científico o lista explícita, no por prefijo del id", () => {
+  test("«mismo remedio» por nombre científico o lista explícita, no por prefijo del id", () => {
     usar([{ id: "a", nombre: "A" }], [E("agua", "habito", ["a"], 2, { alternativas: ["agua_segura", "otra"] }), E("agua_segura", "habito", ["a"], 3), E("otra", "alimento", ["a"], 2),
       E("manzanilla", "planta", ["a"], 1, { excluir: libre({ edad_minima: 12 }) }), E("manzanilla_piel", "planta", ["a"], 1, { excluir: libre({ edad_minima: 12 }) })]);
     assert.equal(M.mismoRemedio(M.porId("agua"), M.porId("agua_segura")), false);
     assert.equal(M.mismoRemedio(M.porId("manzanilla"), M.porId("manzanilla_piel")), true);
     assert.ok(M.alternativas("agua", per()).some(a => a.id === "agua_segura"));
   });
-  test("D5: sin aviso automático del control prenatal en el suero oral, ni repetido si el «cómo» ya lo dice", () => {
+  test("sin aviso automático del control prenatal en el suero oral, ni repetido si el «cómo» ya lo dice", () => {
     usar([{ id: "a", nombre: "A" }], [E("suero_oral", "suplemento", ["a"], 3, { excluir: libre({ edad_minima: 0 }), cuanto_ninos: "x" }),
       E("acido", "suplemento", ["a"], 3, { como: "Tómalo como te lo indiquen en tu control prenatal.", excluir: libre({ edad_minima: 12 }) }),
       E("otro_sup", "suplemento", ["a"], 2, { excluir: libre({ edad_minima: 18 }) })]);
@@ -231,7 +231,7 @@ describe("decisiones de diseño (2026-11-02)", () => {
     assert.equal(prenatal("acido"), false);
     assert.equal(prenatal("otro_sup"), true);
   });
-  test("D7: en una sección de un solo tipo (Dolor de cabeza: solo hábitos) el tope es el de la sección, no 2 por tipo", () => {
+  test("en una sección de un solo tipo (Dolor de cabeza: solo hábitos) el tope es el de la sección, no 2 por tipo", () => {
     usar([{ id: "cabeza", nombre: "Cabeza", clase: "molestia", tipos_permitidos: ["habito"] }], ["h1", "h2", "h3", "h4", "h5"].map(id => E(id, "habito", ["cabeza"], 2)));
     assert.equal(ids(ses(), ["cabeza"]).length, 4);
     usar([{ id: "m", nombre: "M", clase: "molestia" }], ["h1", "h2", "h3", "h4", "h5"].map(id => E(id, "habito", ["m"], 2)));
@@ -300,7 +300,7 @@ describe("10 · quiosco: «Leer cada pantalla» encendido por defecto en Electro
   });
 });
 
-describe("11 · lint (criterio 14)", () => {
+describe("11 · lint", () => {
   const PRIMERO = [
     ["Withania somnifera (L.) Dunal", "Ashwagandha", "suplemento"], ["Digitalis purpurea", "Digital", "planta"],
     ["Aconitum napellus", "Acónito", "planta"], ["Atropa belladonna", "Belladona", "planta"], ["Pausinystalia yohimbe", "Yohimbe", "suplemento"],
@@ -357,7 +357,7 @@ describe("11 · lint (criterio 14)", () => {
   test("cleanup", () => { rmSync(tmp, { recursive: true, force: true }); });
 });
 
-describe("criterio 11 · corpus real: la actividad por edad sale en su sección", () => {
+describe("actividad física · corpus real: la actividad por edad sale en su sección", () => {
   const ctx = cargar([], { corpus: "real" });
   const MR = ctx.MediBotRecomendaciones; const RR = ctx.MediBotReglas;
   const casos = [

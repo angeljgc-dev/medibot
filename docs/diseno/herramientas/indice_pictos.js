@@ -62,6 +62,27 @@ window.MediBotPictos = {
    "modo": "dibujo",
    "archivo": "p-otra-persona.svg"
   },
+  "p-mujer": {
+   "titulo": "Mujer",
+   "grupo": "persona",
+   "uso": "«Sobre ti» → sexo: mujer (o niña).",
+   "modo": "dibujo",
+   "archivo": "p-mujer.svg"
+  },
+  "p-hombre": {
+   "titulo": "Hombre",
+   "grupo": "persona",
+   "uso": "«Sobre ti» → sexo: hombre (o niño).",
+   "modo": "dibujo",
+   "archivo": "p-hombre.svg"
+  },
+  "p-no-decir": {
+   "titulo": "Prefiero no decir",
+   "grupo": "persona",
+   "uso": "«Sobre ti» → sexo o embarazo: prefiero no decir.",
+   "modo": "dibujo",
+   "archivo": "p-no-decir.svg"
+  },
   "p-medir-oximetro": {
    "titulo": "Dedo en el oxímetro",
    "grupo": "medicion",

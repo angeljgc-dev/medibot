@@ -1,9 +1,9 @@
-"""Fuente ÚNICA de los pictogramas de MediBot, estilo «A · Bordado» (criterio 77; docs/diseno/sistema.md §8).
+"""Fuente ÚNICA de los pictogramas de MediBot, estilo «A · Bordado» (docs/diseno/sistema.md §8).
 
 Uso (desde la carpeta MediBot):  PYTHONUTF8=1 python tools/generar_pictos.py [--revisar]
 
 Escribe, desde los dibujos de abajo:
-  - assets/pictos/<id>.svg (75), assets/pictos/sprite.svg y assets/pictos/indice.json;
+  - assets/pictos/<id>.svg (78), assets/pictos/sprite.svg y assets/pictos/indice.json;
   - el sprite dentro de index.html, entre <!-- sprite:inicio --> y <!-- sprite:fin --> (Electron carga con file:// y Chromium
     no deja usar <use href="archivo.svg#id"> entre archivos con ese origen), y en las páginas de docs/diseno con esas marcas;
   - data/pictos.js (títulos y mapas para la app, sin fetch) y docs/diseno/herramientas/indice_pictos.js (copia del índice para las páginas de diseño).
@@ -45,7 +45,8 @@ def add(id_, titulo, grupo, uso, modo, cuerpo):
 
 
 # =====================================================================================
-# Los 75 dibujos (revisados el 2026-11-02 en hojas de contacto a 112 y 48 px, claro y oscuro)
+# Los 78 dibujos: 75 revisados el 2026-11-02 en hojas de contacto a 112 y 48 px, claro y oscuro, + p-mujer y p-hombre (ronda 6)
+# + p-no-decir (ronda 6, lote de cierre)
 # =====================================================================================
 add('p-adulto', 'Persona adulta', 'persona', '¿Para quién es? → para mí (adulto de 18 a 59 años).', 'dibujo', f"""
 <path d="M12 60 q0 -24 20 -24 q20 0 20 24 z" fill="{ANIL}"/>
@@ -124,6 +125,37 @@ add('p-otra-persona', 'Otra persona', 'persona', '¿Para quién es? → para otr
 <path d="M30 41 l3.5 -3.5" stroke-width="3.6"/>
 <path d="M30 41 l3.5 -3.5" stroke="{PIEL}" stroke-width="1.6"/>
 <circle cx="29.5" cy="41.5" r="2.8" fill="{PIEL}"/>
+""")
+
+add('p-mujer', 'Mujer', 'persona', '«Sobre ti» → sexo: mujer (o niña).', 'dibujo', f"""
+<path d="M12 60 q0 -24 20 -24 q20 0 20 24 z" fill="{GRANA}"/>
+<path d="M18 51 h28" stroke="{OCRE}" stroke-dasharray="3 3"/>
+<path d="M22 40 q10 9 20 0" stroke="{CREMA}" stroke-width="1.8"/>
+<path d="M23 22 q-4 10 1 21" stroke-width="6.5"/>
+<path d="M23 22 q-4 10 1 21" stroke="{CONTORNO}" stroke-width="4"/>
+<path d="M21.6 34 h4 M21.4 38.5 h4" stroke="{OCRE}" stroke-width="1.6"/>
+<circle cx="32" cy="24" r="9" fill="{PIEL}"/>
+<path d="M24.25 24 a7.75 7.75 0 0 1 15.5 0 q-7.75 -5 -15.5 0 z" fill="{CONTORNO}" stroke="none"/>
+<circle cx="40.5" cy="17.5" r="2.6" fill="{OCRE}" stroke-width="1.5"/>
+""")
+
+add('p-hombre', 'Hombre', 'persona', '«Sobre ti» → sexo: hombre (o niño).', 'dibujo', f"""
+<path d="M12 60 q0 -24 20 -24 q20 0 20 24 z" fill="{VERDE}"/>
+<path d="M32 43 v17" stroke="{CREMA}" stroke-width="1.6" stroke-dasharray="2 2.5"/>
+<path d="M26 37 l6 6 l6 -6" stroke="{CREMA}" stroke-width="1.8"/>
+<circle cx="32" cy="24" r="9" fill="{PIEL}"/>
+<path d="M24.25 24 a7.75 7.75 0 0 1 15.5 0 q-7.75 -3.2 -15.5 0 z" fill="{CONTORNO}" stroke="none"/>
+<path d="M28 28.6 q4 -2.4 8 0" stroke="{CONTORNO}" stroke-width="2"/>
+""")
+
+add('p-no-decir', 'Prefiero no decir', 'persona', '«Sobre ti» → sexo o embarazo: prefiero no decir.', 'dibujo', f"""
+<path d="M7 60 q0 -22 18 -22 q18 0 18 22 z" fill="{AGUA}"/>
+<path d="M13 52 h24" stroke="{OCRE}" stroke-dasharray="3 3"/>
+<circle cx="25" cy="27" r="8.5" fill="{PIEL}"/>
+<path d="M17.7 27 a7.3 7.3 0 0 1 14.6 0 q-7.3 -4 -14.6 0 z" fill="{CONTORNO}" stroke="none"/>
+<path d="M21.5 31 h7" stroke="{CONTORNO}" stroke-width="1.8"/>
+<path d="M38 6 h16 a6 6 0 0 1 6 6 v6 a6 6 0 0 1 -6 6 h-10 l-7 5 v-5 h1 a6 6 0 0 1 -6 -6 v-6 a6 6 0 0 1 6 -6 z" fill="{CREMA}"/>
+<path d="M40 15 h12" stroke="{GRANA}" stroke-width="2.5"/>
 """)
 
 add('p-medir-oximetro', 'Dedo en el oxímetro', 'medicion', 'Pantalla de mediciones: cómo poner el dedo para pulso y oxígeno.', 'dibujo', f"""
@@ -876,7 +908,8 @@ ENTRADAS = {"frijol": "p-frijol", "tortilla": "p-tortilla", "agua": "p-agua", "c
 APP = {
     "para_quien": {"yo": "p-adulto", "nino": "p-nino", "otra": "p-otra-persona"},
     "edades": {"bebe": "p-bebe", "nino": "p-nino", "12a17": "p-adulto", "18a59": "p-adulto", "60mas": "p-mayor"},
-    "embarazo": {"si": "p-embarazada", "lactancia": "p-lactancia", "no": "p-no"},
+    "embarazo": {"si": "p-embarazada", "lactancia": "p-lactancia", "no": "p-no", "no_decir": "p-no-decir"},  # 93
+    "sexo": {"mujer": "p-mujer", "hombre": "p-hombre", "no_decir": "p-no-decir"},  # ronda 6
     # Las señales de alarma todavía no tienen dibujo propio (sistema.md §15.2): se usa la zona del cuerpo.
     "alarma": {"pecho": "p-grupo-pecho", "aire": "p-grupo-pecho", "cerebro": "p-grupo-cabeza", "desmayo": "p-grupo-cabeza",
                "sangre": "p-grupo-cuerpo", "nino_peligro": "p-nino", "apoyo": "p-adulto", "tos": "p-tos", "peso": "p-medir-bascula",
@@ -894,7 +927,7 @@ def compacta(s):
 def generar():
     """Devuelve {ruta: texto} de todo lo generado."""
     ids = [p[0] for p in P]
-    assert len(ids) == len(set(ids)) == 75, "75 ids sin repetir"
+    assert len(ids) == len(set(ids)) == 78, "78 ids sin repetir (75 + mujer, hombre y prefiero no decir, ronda 6)"
     out, simbolos = {}, []
     indice = {"version": "2.0", "estilo": ESTILO, "pigmentos": PALETA, "pictos": {},
               "secciones": SECCIONES, "grupos": GRUPOS, "tipos": TIPOS, "entradas": ENTRADAS}

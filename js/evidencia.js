@@ -50,7 +50,7 @@
     let tick = null;
     function pinta() {
       nTotal.textContent = E.total; nDist.textContent = E.patrones.size; ult.textContent = E.ultimo || "—";
-      const s = (Date.now() - E.inicio) / 1000; seg.textContent = s.toFixed(0); nSeg.textContent = s > 0 ? (E.total / s).toFixed(1) : "0";
+      const s = E.inicio ? (Date.now() - E.inicio) / 1000 : 0; /* 105: sin empezar, 0 s */ seg.textContent = s.toFixed(0); nSeg.textContent = s > 0 ? (E.total / s).toFixed(1) : "0";
       listaPat.replaceChildren(...[...E.patrones.entries()].slice(0, 12).map(([k, v]) => h("li", h("code.hex", k), ` ×${v.n} (apareció a los ${v.primero.toFixed(1)} s)`)));
     }
     async function arrancar() {

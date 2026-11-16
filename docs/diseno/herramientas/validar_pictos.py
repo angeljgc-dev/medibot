@@ -3,7 +3,7 @@
 
 Comprueba en cada .svg: XML válido, solo elementos de una lista permitida (en el espacio de nombres SVG: nada de
 <script>, <style>, <foreignObject>, <set>, <animate>…), solo atributos permitidos (sin on*, sin style, sin url() externos),
-<title> no vacío, viewBox "0 0 64 64", menos de 6 KB y, estilo «A · Bordado» (criterio 77): solo colores de la paleta
+<title> no vacío, viewBox "0 0 64 64", menos de 6 KB y, estilo «A · Bordado»: solo colores de la paleta
 (grana, añil, ocre, verde, piel, crema, azul agua y contorno), el contorno variable var(--picto-contorno, #2B1D16),
 currentColor o none.
 Además: que sprite.svg tenga un <symbol id> por archivo y que indice.json los nombre a todos.

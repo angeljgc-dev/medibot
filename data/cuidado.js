@@ -1,4 +1,4 @@
-/* «Cuidado con esto» v1.0 (2026-11-02), criterio 16. 14 tarjetas sobre remedios comunes que
+/* «Cuidado con esto» v1.0 (2026-11-02). 14 tarjetas sobre remedios comunes que
    pueden hacer daño, cada una con fuente oficial abierta. Se quitó arnica_tomada
    (decisión de diseño: la árnica que se toma en México es otra planta). El objeto es JSON válido (lo lee
    json.loads en tools/lint_contenido.py). Motor: js/recomendaciones.js → cuidado(). */
@@ -84,7 +84,7 @@ window.MediBotData.cuidado = {
         "colicos"
       ],
       "perfiles": [],
-      "edad_minima": 12,
+      "edad_minima": 9,
       "en_su_lugar_por_seccion": {
         "embarazo": {
           "en_su_lugar": [
@@ -116,6 +116,7 @@ window.MediBotData.cuidado = {
         "arroz_cocido"
       ],
       "texto_en_su_lugar": "Con diarrea, sigue comiendo poco y seguido, sigue dando pecho y toma suero oral cada vez que vayas al baño suelto.",
+      "por_perfil": {"menor_embarazo": {"que_es": "Es la costumbre de no comer mientras dura la diarrea.", "por_que_cuidado": "La diarrea puede dejar al cuerpo sin el agua y las sales que necesita para vivir, y sin comida el cuerpo se debilita más. La Organización Mundial de la Salud pide seguir comiendo durante la diarrea, además del suero oral.", "texto_en_su_lugar": "Con diarrea, sigue comiendo poco y seguido y toma suero oral cada vez que vayas al baño suelto."}},
       "secciones": [
         "diarrea"
       ],
@@ -247,7 +248,7 @@ window.MediBotData.cuidado = {
         "no_tabaco",
         "menos_alcohol"
       ],
-      "texto_en_su_lugar": "En el embarazo lo más seguro es nada de alcohol ni cigarro; si te cuesta dejarlos, pide ayuda en tu centro de salud.",
+      "texto_en_su_lugar": "En el embarazo, no tomes nada de alcohol ni fumes; si te cuesta dejarlo, pide ayuda en tu centro de salud.",
       "secciones": [
         "embarazo"
       ],

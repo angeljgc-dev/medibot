@@ -1,4 +1,4 @@
-// Ronda de correcciones, criterio 34: la simulación es estable. Cada valor simulado regresa al del escenario (ruido acotado,
+// Ronda de correcciones: la simulación es estable. Cada valor simulado regresa al del escenario (ruido acotado,
 // sin deriva); el oxígeno nunca pasa de 100; en «normal» nunca sale ámbar ni rojo en 30 minutos simulados.
 import { test, describe, beforeEach, afterEach, mock } from "node:test";
 import assert from "node:assert/strict";
@@ -32,7 +32,7 @@ async function simular(escenario, segundos) {
   return { m, R };
 }
 
-describe("criterio 34 · simulación estable", () => {
+describe("simulación estable", () => {
   beforeEach(() => mock.timers.enable({ apis: ["setInterval", "setTimeout", "Date"], now: 0 }));
   afterEach(() => mock.timers.reset());
 

@@ -6,7 +6,7 @@
    real: ninguna letra impresa baja de 10 pt.
    Que cabe en una carta lo comprueban tools/e2e_pantallas.py (E3b, E10, E10c) y tools/e2e_ronda2.py imprimiendo a PDF. */
 @page { size: letter; margin: 7mm; }
-html { font-size: 11pt; }
+html { font-size: 11pt; background: var(--fondo) !important; color-scheme: light !important; } /* 104: blanca aunque el quiosco esté en oscuro */
 body { background: var(--fondo) !important; color: var(--texto) !important; overflow: visible; }
 .pantalla { height: auto; display: block; }
 .contenido { overflow: visible; padding: 0; display: block; }
@@ -82,6 +82,6 @@ body { background: var(--fondo) !important; color: var(--texto) !important; over
 .hoja--compacta .hoja__dos { gap: 6pt; }
 .hoja--compacta .hoja__cuando-ir li, .hoja--compacta .hoja ol li { margin: 0; }
 .hoja--compacta .tabla--hoja td { padding: 0 2pt; }
-.hoja .nivel { white-space: nowrap; align-items: center; } .hoja .nivel .pic { flex: none; } /* criterio 63 */
+.hoja .nivel { white-space: nowrap; align-items: center; } .hoja .nivel .pic { flex: none; }
 .hoja__notas-med { font-size: 11pt; }
 .app .hoja small, .app .hoja .tabla small { font-size: 11pt; } /* la unidad («latidos por minuto») tampoco baja de 11 pt */
